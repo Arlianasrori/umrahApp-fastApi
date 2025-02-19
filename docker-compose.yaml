@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_umrah
+    environment:
+      POSTGRES_PASSWORD: habil123
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_umrah
+    environment:
+      PGADMIN_DEFAULT_EMAIL: arlianasrori@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: habil123
+    ports:
+      - "5055:80"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
