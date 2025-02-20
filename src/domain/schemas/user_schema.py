@@ -5,3 +5,4 @@ class UserBase(BaseModel) :
     name : str
     email : str
     role : str
+    foto_profile : str | None = None

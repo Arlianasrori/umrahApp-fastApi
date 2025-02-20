@@ -6,7 +6,6 @@ from datetime import datetime, date
 class PackageBase(BaseModel) :
     id : int
     name : str
-    seat_count : int
     departure_date : date
     image : str
     detail : str
@@ -20,6 +19,8 @@ class PackagePricesBase(BaseModel) :
     package_type : PackageTypeEnum
     room_type : RoomTypeEnum
     price : float
+    detail : str
+    seat_count : int
 
 class BookingBase(BaseModel) :
     id : int

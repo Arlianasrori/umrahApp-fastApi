@@ -10,7 +10,6 @@ class Package(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    seat_count = Column(Integer, nullable=False)
     departure_date = Column(Date, nullable=False)
     image = Column(String, nullable=False)
     detail = Column(String)
@@ -40,6 +39,9 @@ class PackagePrices(Base) :
     package_type = Column(Enum(PackageTypeEnum), nullable=False)
     room_type = Column(Enum(RoomTypeEnum), nullable=False)
     price = Column(Float, nullable=False)
+    detail = Column(String)
+    seat_count = Column(Integer, nullable=False)
+
 
     package = relationship("Package", back_populates="package_prices")
     booking = relationship("Booking", back_populates="package_price")

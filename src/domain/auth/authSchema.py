@@ -1,11 +1,46 @@
 from pydantic import BaseModel, EmailStr
+from fastapi import Form,UploadFile,File
 from ..schemas.passwordValidation_schema import PasswordValidation
 from ...types.user_types import UserRoleEnum
 
+# class AddPackageRequest(BaseModel) :
+#     name : str
+#     departure_date : date
+#     image : UploadFile
+#     detail : str
+#     @classmethod
+#     def as_form(
+#             cls,
+#             name: str = Form(...),
+#             departure_date: date = Form(...),
+#             image: UploadFile = File(...),
+#             detail: str = Form(...)
+#         ):
+#             return cls(
+#                 name=name,
+#                 departure_date=departure_date,
+#                 image=image,
+#                 detail=detail
+#             )
 class RegisterRequest(PasswordValidation) :
     name : str
     email : EmailStr
     password : str
+    foto_profile : UploadFile | None = None
+    @classmethod
+    def as_form(
+            cls,
+            name: str = Form(...),
+            email: EmailStr = Form(...),
+            password: str = Form(...),
+            foto_profile: UploadFile = File(...)
+        ):
+            return cls(
+                name=name,
+                email=email,
+                foto_profile=foto_profile,
+                password=password
+            )
 
 class VerifyAccountRequest(BaseModel) :
     id : int

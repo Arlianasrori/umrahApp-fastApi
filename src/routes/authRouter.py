@@ -19,7 +19,7 @@ from ..auth.auth_depends.user.depend_refresh_auth_user import userrefreshAuth
 authRouter = APIRouter(prefix="/auth")
 
 @authRouter.post("/register",response_model=ApiResponse[UserBase],tags=["AUTH/REGISTER"])
-async def register(auth : RegisterRequest,session : sessionDepedency) :
+async def register(auth : RegisterRequest = Depends(RegisterRequest.as_form),session : sessionDepedency = None) :
     return await authService.register(auth,session)
 
 @authRouter.post("/register/verify",response_model=ApiResponse[UserBase],tags=["AUTH/REGISTER"])

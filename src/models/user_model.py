@@ -11,6 +11,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String,nullable=True)
     role = Column(Enum(UserRoleEnum), nullable=False)
+    foto_profile = Column(String,nullable=True)
     verified = Column(Boolean,default=False)                                                                            
 
     booking = relationship("Booking", back_populates="user")

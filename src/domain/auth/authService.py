@@ -24,10 +24,14 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
 from enum import Enum
+import aiofiles
 
 class PlatformEnum(Enum):
     WEB = "web"
     ANDROID = "android"
+
+FOTO_PROFILE_BASE_URL = os.getenv("USER_PROFILE_BASE_URL")
+FOTO_PROFILE_BASE_STORE = os.getenv("USER_PROFILE_BASE_STORE")
 
 async def register(auth : RegisterRequest,session : AsyncSession) -> UserBase:
     findUserByEmail = (await session.execute(select(User).where(User.email == auth.email))).scalar_one_or_none()
@@ -36,6 +40,20 @@ async def register(auth : RegisterRequest,session : AsyncSession) -> UserBase:
         raise HttpException(400,"email already exists")
     
     userMapping = {"id" : generate_id(),"name" : auth.name,"email" : auth.email,"password" : create_hash_password(auth.password),"role" : UserRoleEnum.USER.value,"verified" : False}
+    
+    if auth.foto_profile :
+        ext_file = auth.foto_profile.filename.split(".")
+
+        if ext_file[-1] not in ["jpg","png","jpeg"] :
+            raise HttpException(400,f"file harus berupa gambar")
+
+        file_name = f"{generate_id()}-{auth.foto_profile.filename.split(' ')[0].split('.')[0]}.{ext_file[-1]}"
+        file_name_save = f"{FOTO_PROFILE_BASE_STORE}{file_name}"
+
+        async with aiofiles.open(file_name_save, "wb") as f:
+            await f.write(auth.foto_profile.file.read())
+            userMapping["foto_profile"] = f"{FOTO_PROFILE_BASE_URL}/{file_name}"
+    
     session.add(User(**userMapping))
 
     # send otp for verify email

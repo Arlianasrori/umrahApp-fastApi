@@ -158,7 +158,7 @@ async def addPackagePrices(packagePrices:AddPackagePricesRequest,session:AsyncSe
         "msg" : "success",
         "data" : {
             **packageDictCopy,
-            "package_prices" : packagePricesDb
+            "package_prices" : packagePriceResponse
         }
     }
 

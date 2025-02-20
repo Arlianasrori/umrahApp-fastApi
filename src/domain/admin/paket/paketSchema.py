@@ -9,7 +9,6 @@ class ResponsePaketPag(PaginationBase) :
 
 class AddPackageRequest(BaseModel) :
     name : str
-    seat_count : int
     departure_date : date
     image : UploadFile
     detail : str
@@ -17,14 +16,12 @@ class AddPackageRequest(BaseModel) :
     def as_form(
             cls,
             name: str = Form(...),
-            seat_count: int = Form(...),
             departure_date: date = Form(...),
             image: UploadFile = File(...),
             detail: str = Form(...)
         ):
             return cls(
                 name=name,
-                seat_count=seat_count,
                 departure_date=departure_date,
                 image=image,
                 detail=detail
@@ -32,7 +29,6 @@ class AddPackageRequest(BaseModel) :
     
 class UpdatePackageRequest(BaseModel) :
     name : str | None = None
-    seat_count : int | None = None
     departure_date : date | None = None
     image : UploadFile | None = None
     detail : str | None = None
@@ -40,14 +36,12 @@ class UpdatePackageRequest(BaseModel) :
     def as_form(
             cls,
             name: str | None = Form(None),
-            seat_count: int | None = Form(None),
             departure_date: date | None = Form(None),
             image: UploadFile | None = File(None),
             detail: str | None = Form(None)
         ):
             return cls(
                 name=name,
-                seat_count=seat_count,
                 departure_date=departure_date,
                 image=image,
                 detail=detail
@@ -57,6 +51,8 @@ class PackagePrices(BaseModel) :
     package_type : PackageTypeEnum
     room_type : RoomTypeEnum
     price : float
+    detail : str
+    seat_count : int
 
 class AddPackagePricesRequest(BaseModel) :
     package_id : int
@@ -66,6 +62,8 @@ class UpdatePackagePricesRequest(BaseModel) :
     package_type : PackageTypeEnum | None = None
     room_type : RoomTypeEnum | None = None
     price : float | None = None
+    detail : str | None = None
+    seat_count : int | None = None
 
 class GetAllPackagesQuery(BaseModel) :
     page : int | None = None
