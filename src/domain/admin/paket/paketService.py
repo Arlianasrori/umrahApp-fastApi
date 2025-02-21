@@ -4,10 +4,14 @@ from fastapi import UploadFile
 from sqlalchemy.orm import joinedload, subqueryload
 # models
 from ....models.package_model import Package,PackagePrices,GalleryPackage, Booking, Rating
+from ....models.user_model import User
 
 # schemas
 from .paketSchema import AddPackageRequest,AddPackagePricesRequest, GetAllPackagesQuery, UpdatePackageRequest,UpdatePackagePricesRequest,ResponsePaketPag, GetPackageRatingResponse
 from ...schemas.package_schema import PackageBase,PackageWithPrices,PackageWithGallery,GalleryPackageBase, PackagePricesBase, PackageWithPricesGalleryUser
+
+# types
+from ....types.package_types import BookingStatusEnum 
 
 # common
 import aiofiles
@@ -91,7 +95,6 @@ async def deletePackage(id_package : int,session:AsyncSession) -> PackageBase:
     }
 
 async def getAllPackage(query : GetAllPackagesQuery,session:AsyncSession) -> list[PackageBase] | ResponsePaketPag:
-    print(query)
     statementSelectPackage = select(Package).where(and_(Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
 
     if query.page :
@@ -120,7 +123,7 @@ async def getPackageById(id_package : int,session:AsyncSession) -> PackageWithPr
     if not findPackage :
         raise HttpException(404,f"package not found")
 
-    findUser = (await session.execute(select(Booking).options(joinedload(Booking.user)).where(Booking.package_id == findPackage.id))).scalars().all()
+    findUser = (await session.execute(select(User).where(User.booking.any(Booking.package_id == findPackage.id,Booking.status != BookingStatusEnum.CANCELLED)))).scalars().all()
 
     return {
         "msg" : "success",
@@ -129,7 +132,6 @@ async def getPackageById(id_package : int,session:AsyncSession) -> PackageWithPr
             "user" : findUser
         }
     }
-
 
 
 # package prices

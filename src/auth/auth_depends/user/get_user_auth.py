@@ -1,4 +1,4 @@
 from fastapi import Request
 
-async def getAdminAuth(req : Request) :
+async def getUsetAuth(req : Request) :
     return req.User

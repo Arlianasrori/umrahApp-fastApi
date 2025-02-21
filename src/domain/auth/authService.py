@@ -40,7 +40,7 @@ async def register(auth : RegisterRequest,session : AsyncSession) -> UserBase:
         raise HttpException(400,"email already exists")
     
     userMapping = {"id" : generate_id(),"name" : auth.name,"email" : auth.email,"password" : create_hash_password(auth.password),"role" : UserRoleEnum.USER.value,"verified" : False}
-    
+
     if auth.foto_profile :
         ext_file = auth.foto_profile.filename.split(".")
 
@@ -210,7 +210,7 @@ async def userLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -
 
     token_payload = {"id" : findUser.id}
 
-    token = create_token(token_payload,UserRoleEnum.SISWA)
+    token = create_token(token_payload,UserRoleEnum.USER)
     Res.set_cookie("access_token",token["access_token"])
     Res.set_cookie("refresh_token",token["refresh_token"])
 

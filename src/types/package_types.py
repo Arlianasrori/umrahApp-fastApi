@@ -14,3 +14,7 @@ class BookingStatusEnum(Enum) :
     PENDING = "PENDING"
     CONFIRMED = "CONFIRMED"
     CANCELLED = "CANCELLED"
+
+class PackageCategoryEnum(Enum) :
+    UMRAH = "UMRAH"
+    HAJI = "HAJI"

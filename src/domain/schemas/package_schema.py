@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from ...types.package_types import PackageTypeEnum,RoomTypeEnum,BookingStatusEnum
+from ...types.package_types import PackageTypeEnum,RoomTypeEnum,BookingStatusEnum, PackageCategoryEnum
 from .user_schema import UserBase
 from datetime import datetime, date
 
@@ -8,6 +8,7 @@ class PackageBase(BaseModel) :
     name : str
     departure_date : date
     image : str
+    category : PackageCategoryEnum
     detail : str
 
 class GalleryPackageBase(BaseModel) :
@@ -27,9 +28,13 @@ class BookingBase(BaseModel) :
     user_id : int
     package_id : int
     packages_price_id : int
-    booking_date : int
+    booking_date : datetime
     status : BookingStatusEnum
     total_price : float
+
+class BookingWithPackagePrices(BookingBase) :
+    package : PackageBase
+    package_price : PackagePricesBase
 
 class RatingBase(BaseModel) :
     id : int
