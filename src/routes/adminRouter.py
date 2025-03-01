@@ -31,20 +31,20 @@ async def get_admin(admin : dict = Depends(getAdminAuth),session : sessionDepede
 
 # package
 @adminRouter.post("/package",response_model=ApiResponse[PackageBase],tags=["ADMIN/PACKAGE"])
-async def add_package(request : AddPackageRequest = Depends(AddPackageRequest.as_form),session : sessionDepedency = None) :
-    return await paketService.addPackage(request,session)
+async def add_package(request : AddPackageRequest = Depends(AddPackageRequest.as_form),admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.addPackage(admin,request,session)
 
 @adminRouter.get("/package",response_model=ApiResponse[list[PackageBase] | ResponsePaketPag],tags=["ADMIN/PACKAGE"])
-async def get_all_package(query : GetAllPackagesQuery = Depends(),session : sessionDepedency = None) :
-    return await paketService.getAllPackage(query,session)
+async def get_all_package(query : GetAllPackagesQuery = Depends(),admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.getAllPackage(admin,query,session)
 
 @adminRouter.get("/package/{id_package}",response_model=ApiResponse[PackageWithPricesGalleryUser],tags=["ADMIN/PACKAGE"])
-async def get_package_by_id(id_package : int,session : sessionDepedency = None) :
-    return await paketService.getPackageById(id_package,session)
+async def get_package_by_id(id_package : int,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.getPackageById(admin,id_package,session)
 
 @adminRouter.put("/package/{id_package}",response_model=ApiResponse[PackageBase],tags=["ADMIN/PACKAGE"])
-async def update_package(id_package : int,request : UpdatePackageRequest,session : sessionDepedency) :
-    return await paketService.updatePackage(id_package,request,session)
+async def update_package(id_package : int,request : UpdatePackageRequest,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.updatePackage(admin,id_package,request,session)
 
 @adminRouter.delete("/package/{id_package}",response_model=ApiResponse[PackageBase],tags=["ADMIN/PACKAGE"])
 async def delete_package(id_package : int,session : sessionDepedency) :
@@ -52,12 +52,12 @@ async def delete_package(id_package : int,session : sessionDepedency) :
 
 # package prices
 @adminRouter.post("/package/prices",response_model=ApiResponse[PackageWithPrices],tags=["ADMIN/PACKAGE-PRICES"])
-async def add_package_prices(request : AddPackagePricesRequest,session : sessionDepedency) :
-    return await paketService.addPackagePrices(request,session)
+async def add_package_prices(request : AddPackagePricesRequest,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.addPackagePrices(admin,request,session)
 
 @adminRouter.put("/package/prices/{id_package_prices}",response_model=ApiResponse[PackagePricesBase],tags=["ADMIN/PACKAGE-PRICES"])
-async def update_package_prices(id_package_prices : int,request : UpdatePackagePricesRequest,session : sessionDepedency) :
-    return await paketService.updatePackagePrices(id_package_prices,request,session)
+async def update_package_prices(id_package_prices : int,request : UpdatePackagePricesRequest,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.updatePackagePrices(admin,id_package_prices,request,session)
 
 @adminRouter.delete("/package/prices/{id_package_prices}",response_model=ApiResponse[PackagePricesBase],tags=["ADMIN/PACKAGE-PRICES"])
 async def delete_package_prices(id_package_prices : int,session : sessionDepedency) :
@@ -65,8 +65,8 @@ async def delete_package_prices(id_package_prices : int,session : sessionDepeden
 
 # package gallery
 @adminRouter.post("/package/gallery/{id_package}",response_model=ApiResponse[PackageWithGallery],tags=["ADMIN/GALLERY"])
-async def add_package_gallery(id_package : int,image : UploadFile,session : sessionDepedency) :
-    return await paketService.addGalleryPackage(id_package,image,session)
+async def add_package_gallery(id_package : int,image : UploadFile,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.addGalleryPackage(admin,id_package,image,session)
 
 @adminRouter.delete("/package/gallery/{id_gallery_package}",response_model=ApiResponse[GalleryPackageBase],tags=["ADMIN/GALLERY"])
 async def delete_package_gallery(id_gallery_package : int,session : sessionDepedency) :
@@ -74,18 +74,18 @@ async def delete_package_gallery(id_gallery_package : int,session : sessionDeped
 
 # booking
 @adminRouter.get("/booking/package/contains-booking",response_model=ApiResponse[list[GetPackageContainsBooking] | GetPackageContainsBookingResponsePag],tags=["ADMIN/BOOKING"])
-async def get_all_package_contains_booking(query : GetAllPackagesBookingQuery = Depends(),session : sessionDepedency = None) :
-    return await bookingService.getAllPackageContainsBooking(query,session)
+async def get_all_package_contains_booking(query : GetAllPackagesBookingQuery = Depends(),admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await bookingService.getAllPackageContainsBooking(admin,query,session)
 
 @adminRouter.get("/booking/{id_package}",response_model=ApiResponse[PackageWithBooking],tags=["ADMIN/BOOKING"])
 async def get_booking_detail(id_package : int,session : sessionDepedency) :
     return await bookingService.getDetailBooking(id_package,session)
 
 @adminRouter.patch("/booking/status/{id_booking}",response_model=ApiResponse[BookingWithUserPrice],tags=["ADMIN/BOOKING"])
-async def update_booking_status(id_booking : int,request : UpdateBookingStatusRequest,session : sessionDepedency) :
-    return await bookingService.updateBookingStatus(id_booking,request,session)
+async def update_booking_status(id_booking : int,request : UpdateBookingStatusRequest,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await bookingService.updateBookingStatus(admin,id_booking,request,session)
 
 # rating
 @adminRouter.get("/package/rating/{id_package}",response_model=ApiResponse[GetPackageRatingResponse],tags=["ADMIN/RATING"])
-async def get_all_package_contains_booking(id_package : int,session : sessionDepedency = None) :
-    return await paketService.getPackageRating(id_package,session)
+async def get_all_package_contains_booking(id_package : int,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await paketService.getPackageRating(admin,id_package,session)

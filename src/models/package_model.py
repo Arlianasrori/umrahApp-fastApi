@@ -14,8 +14,10 @@ class Package(Base):
     image = Column(String, nullable=False)
     detail = Column(String)
     category = Column(Enum(PackageCategoryEnum))
+    add_by_admin = Column(Integer,ForeignKey("user.id"), nullable=False)
 
     package_prices = relationship("PackagePrices", back_populates="package")
+    user = relationship("User", back_populates="package")
     booking = relationship("Booking", back_populates="package")
     rating = relationship("Rating", back_populates="package")
     gallery = relationship("GalleryPackage", back_populates="package")

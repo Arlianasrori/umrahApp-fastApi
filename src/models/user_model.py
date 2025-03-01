@@ -14,6 +14,7 @@ class User(Base):
     foto_profile = Column(String,nullable=True)
     verified = Column(Boolean,default=False)                                                                            
 
+    package = relationship("Package", back_populates="user")
     booking = relationship("Booking", back_populates="user")
     rating = relationship("Rating", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
