@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Date,Enum, Float, DateTime, CheckConstraint
 from sqlalchemy.orm import relationship
 from ..db.db import Base
-from ..types.package_types import PackageTypeEnum,RoomTypeEnum, BookingStatusEnum
+from ..types.package_types import PackageTypeEnum,RoomTypeEnum, BookingStatusEnum, PackageCategoryEnum
 import datetime
 
 
@@ -13,8 +13,11 @@ class Package(Base):
     departure_date = Column(Date, nullable=False)
     image = Column(String, nullable=False)
     detail = Column(String)
+    category = Column(Enum(PackageCategoryEnum))
+    add_by_admin = Column(Integer,ForeignKey("user.id"), nullable=False)
 
     package_prices = relationship("PackagePrices", back_populates="package")
+    user = relationship("User", back_populates="package")
     booking = relationship("Booking", back_populates="package")
     rating = relationship("Rating", back_populates="package")
     gallery = relationship("GalleryPackage", back_populates="package")
@@ -56,8 +59,9 @@ class Booking(Base):
     user_id = Column(Integer, ForeignKey("user.id"),nullable=False)
     package_id = Column(Integer,ForeignKey("package.id"), nullable=False)
     packages_price_id = Column(Integer, ForeignKey("package_prices.id"),nullable=False)
-    booking_date = Column(Integer, nullable=False)
+    booking_date = Column(DateTime, nullable=False)
     status = Column(Enum(BookingStatusEnum))
+    count = Column(Integer, nullable=False)
     total_price = Column(Float, nullable=False)
 
     package = relationship("Package", back_populates="booking")
@@ -80,7 +84,7 @@ class Rating(Base):
     package = relationship("Package", back_populates="rating")
 
     __table_args__ = (
-        CheckConstraint('rating <= 0', name='rating_lessorequal_five'),
+        CheckConstraint('rating <= 5', name='rating_lessorequal_five'),
     )
 
     def __repr__(self):

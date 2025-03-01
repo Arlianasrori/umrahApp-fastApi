@@ -4,10 +4,14 @@ from fastapi import UploadFile
 from sqlalchemy.orm import joinedload, subqueryload
 # models
 from ....models.package_model import Package,PackagePrices,GalleryPackage, Booking, Rating
+from ....models.user_model import User
 
 # schemas
 from .paketSchema import AddPackageRequest,AddPackagePricesRequest, GetAllPackagesQuery, UpdatePackageRequest,UpdatePackagePricesRequest,ResponsePaketPag, GetPackageRatingResponse
 from ...schemas.package_schema import PackageBase,PackageWithPrices,PackageWithGallery,GalleryPackageBase, PackagePricesBase, PackageWithPricesGalleryUser
+
+# types
+from ....types.package_types import BookingStatusEnum 
 
 # common
 import aiofiles
@@ -22,9 +26,9 @@ from multiprocessing import Process
 IMAGE_PACKAGE_STORE = os.getenv("IMAGE_PACKAGE_BASE_STORE")
 IMAGE_PACKAGE_BASE_URL = os.getenv("IMAGE_PACKAGE_BASE_URL")
 # package
-async def addPackage(package : AddPackageRequest,session : AsyncSession) -> PackageBase:
+async def addPackage(admin : dict, package : AddPackageRequest,session : AsyncSession) -> PackageBase:
     packageMapping = package.model_dump(exclude={"image"})
-    packageMapping["id"] = generate_id()
+    packageMapping.update({"id" : generate_id(),"add_by_admin" : admin["id"]})
 
     ext_file = package.image.filename.split(".")
 
@@ -45,8 +49,8 @@ async def addPackage(package : AddPackageRequest,session : AsyncSession) -> Pack
         "data" : packageMapping
     }
 
-async def updatePackage(id_package : int,request : UpdatePackageRequest,session:AsyncSession) -> PackageBase:
-    findPackage = (await session.execute(select(Package).where(Package.id == id_package))).scalar_one_or_none()
+async def updatePackage(admin : dict, id_package : int,request : UpdatePackageRequest,session:AsyncSession) -> PackageBase:
+    findPackage = (await session.execute(select(Package).where(and_(Package.id == id_package,Package.add_by_admin == admin["id"])))).scalar_one_or_none()
     if not findPackage :
         raise HttpException(404,f"package not found")
 
@@ -77,8 +81,8 @@ async def updatePackage(id_package : int,request : UpdatePackageRequest,session:
         "data" : packageDictCopy
     }
     
-async def deletePackage(id_package : int,session:AsyncSession) -> PackageBase:
-    findPackage = (await session.execute(select(Package).where(Package.id == id_package))).scalar_one_or_none()
+async def deletePackage(admin: dict, id_package : int,session:AsyncSession) -> PackageBase:
+    findPackage = (await session.execute(select(Package).where(and_(Package.id == id_package,Package.add_by_admin == admin["id"])))).scalar_one_or_none()
     if not findPackage :
         raise HttpException(404,f"package not found")
 
@@ -90,9 +94,8 @@ async def deletePackage(id_package : int,session:AsyncSession) -> PackageBase:
         "data" : packageDictCopy
     }
 
-async def getAllPackage(query : GetAllPackagesQuery,session:AsyncSession) -> list[PackageBase] | ResponsePaketPag:
-    print(query)
-    statementSelectPackage = select(Package).where(and_(Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
+async def getAllPackage(admin : dict,query : GetAllPackagesQuery,session:AsyncSession) -> list[PackageBase] | ResponsePaketPag:
+    statementSelectPackage = select(Package).where(and_(Package.add_by_admin == admin["id"],Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
 
     if query.page :
         findPackage = (await session.execute(statementSelectPackage.limit(10).offset(10 * (query.page - 1)))).scalars().all()
@@ -114,13 +117,13 @@ async def getAllPackage(query : GetAllPackagesQuery,session:AsyncSession) -> lis
             "data" : findPackage
         }
 
-async def getPackageById(id_package : int,session:AsyncSession) -> PackageWithPricesGalleryUser:
-    findPackage = (await session.execute(select(Package).options(subqueryload(Package.package_prices),subqueryload(Package.gallery)).where(Package.id == id_package))).scalar_one_or_none()
+async def getPackageById(admin : dict,id_package : int,session:AsyncSession) -> PackageWithPricesGalleryUser:
+    findPackage = (await session.execute(select(Package).options(subqueryload(Package.package_prices),subqueryload(Package.gallery)).where(and_(Package.id == id_package, Package.add_by_admin == admin["id"])))).scalar_one_or_none()
 
     if not findPackage :
         raise HttpException(404,f"package not found")
 
-    findUser = (await session.execute(select(Booking).options(joinedload(Booking.user)).where(Booking.package_id == findPackage.id))).scalars().all()
+    findUser = (await session.execute(select(User).where(User.booking.any(Booking.package_id == findPackage.id,Booking.status != BookingStatusEnum.CANCELLED)))).scalars().all()
 
     return {
         "msg" : "success",
@@ -131,10 +134,9 @@ async def getPackageById(id_package : int,session:AsyncSession) -> PackageWithPr
     }
 
 
-
 # package prices
-async def addPackagePrices(packagePrices:AddPackagePricesRequest,session:AsyncSession) -> PackageWithPrices:
-    findPackage = (await session.execute(select(Package).where(Package.id == packagePrices.package_id))).scalar_one_or_none()
+async def addPackagePrices(admin : dict, packagePrices:AddPackagePricesRequest,session:AsyncSession) -> PackageWithPrices:
+    findPackage = (await session.execute(select(Package).where(and_(Package.id == packagePrices.package_id,Package.add_by_admin == admin["id"])))).scalar_one_or_none()
     if not findPackage :
         raise HttpException(404,f"paket tidak ditemukan")
 
@@ -162,8 +164,8 @@ async def addPackagePrices(packagePrices:AddPackagePricesRequest,session:AsyncSe
         }
     }
 
-async def updatePackagePrices(id_package_prices : int,request : UpdatePackagePricesRequest,session:AsyncSession) -> PackagePricesBase:
-    findPackagePrices = (await session.execute(select(PackagePrices).where(PackagePrices.id == id_package_prices))).scalar_one_or_none()
+async def updatePackagePrices(admin : dict,id_package_prices : int,request : UpdatePackagePricesRequest,session:AsyncSession) -> PackagePricesBase:
+    findPackagePrices = (await session.execute(select(PackagePrices).where(and_(PackagePrices.id == id_package_prices,Package.add_by_admin == admin["id"])))).scalar_one_or_none()
     if not findPackagePrices :
         raise HttpException(404,f"package prices not found")
     
@@ -196,8 +198,8 @@ async def deletePackagePrices(id_package_prices : int,session:AsyncSession) -> P
 
 
 # package gallery
-async def addGalleryPackage(id_package : int,file : UploadFile,session:AsyncSession) -> PackageWithGallery:
-    findPackage = (await session.execute(select(Package).where(Package.id == id_package))).scalar_one_or_none()
+async def addGalleryPackage(admin : dict, id_package : int,file : UploadFile,session:AsyncSession) -> PackageWithGallery:
+    findPackage = (await session.execute(select(Package).where(and_(Package.id == id_package,Package.add_by_admin == admin["id"])))).scalar_one_or_none()
     if not findPackage :
         raise HttpException(404,f"paket tidak ditemukan")
     
@@ -247,8 +249,8 @@ async def deleteGalleryPackage(id_gallery_package : int,session:AsyncSession) ->
     }
 
 # rating
-async def getPackageRating(id_package : int,session:AsyncSession) -> GetPackageRatingResponse:
-    getStatistikRating = (await session.execute(select(func.count(Rating.id).label("count_rating"),func.count(Rating.id).filter(Rating.review != None).label("count_reviews"),func.avg(Rating.rating).label("avg_rating"),func.count(Rating.id).filter(Rating.rating == 5).label("count_5"),func.count(Rating.id).filter(Rating.rating == 4).label("count_4"),func.count(Rating.id).filter(Rating.rating == 3).label("count_3"),func.count(Rating.id).filter(Rating.rating == 2).label("count_2"),func.count(Rating.id).filter(Rating.rating == 1).label("count_1")))).one()
+async def getPackageRating(admin : dict, id_package : int,session:AsyncSession) -> GetPackageRatingResponse:
+    getStatistikRating = (await session.execute(select(func.count(Rating.id).label("count_rating"),func.count(Rating.id).filter(Rating.review != None).label("count_reviews"),func.avg(Rating.rating).label("avg_rating"),func.count(Rating.id).filter(Rating.rating == 5).label("count_5"),func.count(Rating.id).filter(Rating.rating == 4).label("count_4"),func.count(Rating.id).filter(Rating.rating == 3).label("count_3"),func.count(Rating.id).filter(Rating.rating == 2).label("count_2"),func.count(Rating.id).filter(Rating.rating == 1).label("count_1")).where(and_(Package.id == id_package, Package.add_by_admin == admin["id"])))).one()
 
     findReviews = (await session.execute(select(Rating).options(joinedload(Rating.user)).where(and_(Rating.package_id == id_package,Rating.review != None)))).scalars().all()
 

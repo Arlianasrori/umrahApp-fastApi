@@ -20,6 +20,7 @@ from src.error.errorHandling import add_exception_server
 # Import routers
 from src.routes.authRouter import authRouter
 from src.routes.adminRouter import adminRouter
+from src.routes.userRouter import userRouter
 
 # Initialize FastAPI application with configuration
 App = FastAPI(
@@ -30,7 +31,7 @@ App = FastAPI(
 )
 
 # Add routers to the application
-routes = [authRouter,adminRouter]
+routes = [authRouter,adminRouter,userRouter]
 for router in routes:
     App.include_router(router)
 

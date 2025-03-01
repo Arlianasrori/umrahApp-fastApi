@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from fastapi import Form,UploadFile,File
 from ...schemas.package_schema import PackageBase, RatingWithUser
 from ...schemas.pagination_schema import PaginationBase
-from ....types.package_types import RoomTypeEnum,BookingStatusEnum,PackageTypeEnum
+from ....types.package_types import RoomTypeEnum,BookingStatusEnum,PackageTypeEnum, PackageCategoryEnum
 from datetime import date
 class ResponsePaketPag(PaginationBase) :
     data : list[PackageBase] = []
@@ -12,19 +12,22 @@ class AddPackageRequest(BaseModel) :
     departure_date : date
     image : UploadFile
     detail : str
+    category : PackageCategoryEnum
     @classmethod
     def as_form(
             cls,
             name: str = Form(...),
             departure_date: date = Form(...),
             image: UploadFile = File(...),
-            detail: str = Form(...)
+            detail: str = Form(...),
+            category : PackageCategoryEnum = Form(...)  
         ):
             return cls(
                 name=name,
                 departure_date=departure_date,
                 image=image,
-                detail=detail
+                detail=detail,
+                category=category
             )
     
 class UpdatePackageRequest(BaseModel) :
@@ -32,19 +35,22 @@ class UpdatePackageRequest(BaseModel) :
     departure_date : date | None = None
     image : UploadFile | None = None
     detail : str | None = None
+    category : PackageCategoryEnum | None = None
     @classmethod
     def as_form(
             cls,
             name: str | None = Form(None),
             departure_date: date | None = Form(None),
             image: UploadFile | None = File(None),
-            detail: str | None = Form(None)
+            detail: str | None = Form(None),
+            category : PackageCategoryEnum | None = Form(None)
         ):
             return cls(
                 name=name,
                 departure_date=departure_date,
                 image=image,
-                detail=detail
+                detail=detail,
+                category=category
             )
 
 class PackagePrices(BaseModel) :

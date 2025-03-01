@@ -16,8 +16,9 @@ import math
 from ....error.errorHandling import HttpException
 import os
 
-async def getAllPackageContainsBooking(query : GetAllPackagesQuery,session:AsyncSession) -> list[GetPackageContainsBooking] | GetPackageContainsBookingResponsePag:
-    statementSelectPackage = select(Package).where(and_(Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
+async def getAllPackageContainsBooking(admin : dict,query : GetAllPackagesQuery,session:AsyncSession) -> list[GetPackageContainsBooking] | GetPackageContainsBookingResponsePag:
+    statementSelectPackage = select(Package).where(and_(Package.id == admin["id"], Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
+
     statementGetStatistikBooking = select(func.count(Booking.id).label("count_booking"),func.count(Booking.id).filter(Booking.status == BookingStatusEnum.PENDING).label("count_booking_pending"),func.count(Booking.id).filter(Booking.status == BookingStatusEnum.CONFIRMED).label("count_booking_confirmed"),func.count(Booking.id).filter(Booking.status == BookingStatusEnum.CANCELED).label("count_booking_canceled"))
 
     if query.page :
@@ -65,8 +66,8 @@ async def getDetailBooking(id_package : int,session:AsyncSession) -> PackageWith
         "data" : findPackage
     }
 
-async def updateBookingStatus(id_booking : int,request : UpdateBookingStatusRequest,session:AsyncSession) -> BookingWithUserPrice :
-    findBooking = (await session.execute(select(Booking).where(Booking.id == id_booking))).scalar_one_or_none()
+async def updateBookingStatus(admin : dict, id_booking : int,request : UpdateBookingStatusRequest,session:AsyncSession) -> BookingWithUserPrice :
+    findBooking = (await session.execute(select(Booking).where(and_(Booking.id == id_booking, Booking.package.and_(Package.add_by_admin == admin["id"]))))).scalar_one_or_none()
     if not findBooking :
         raise HttpException(404,f"booking not found")
     findBooking.status = request.status
