@@ -14,6 +14,7 @@ from ..types.user_types import UserRoleEnum
 # depends
 from ..auth.auth_depends.admin.depend_refresh_auth_admin import adminrefreshAuth
 from ..auth.auth_depends.user.depend_refresh_auth_user import userrefreshAuth
+from ..auth.auth_depends.super_admin.depend_refresh_auth_super_admin import superAdminrefreshAuth
 
 
 authRouter = APIRouter(prefix="/auth")
@@ -30,10 +31,14 @@ async def register_verify(auth : VerifyAccountRequest,session : sessionDepedency
 async def register_oauth2(auth : Oauth2Request,platform : authService.PlatformEnum,session : sessionDepedency) :
     return await authService.registerWithOauth2(auth.token_google_id,platform,session)
 
-# admin  auth
-@authRouter.post("/admin/login",response_model=ApiResponse[LoginResponse],tags=["AUTH/ADMIN"])
+# admin and super admin auth
+@authRouter.post("/admin/login",response_model=ApiResponse[LoginResponse],tags=["AUTH/ADMINANDSUPERADMIN"])
 async def admin_login(auth : LoginRequest,Res : Response,session : sessionDepedency) :
-    return await authService.adminLogin(auth,Res,session)
+    return await authService.adminAndSuperAdminLogin(auth,Res,session)
+
+@authRouter.post("/superAdmin/refreshToken",dependencies=[Depends(superAdminrefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
+async def super_admin_refresh_token(Req : Request,Res : Response) :
+    return await authService.refresh_token(Req.admin,UserRoleEnum.SUPER_ADMIN,Res)
 
 @authRouter.post("/admin/refreshToken",dependencies=[Depends(adminrefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
 async def admin_refresh_token(Req : Request,Res : Response) :

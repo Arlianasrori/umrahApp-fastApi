@@ -56,6 +56,7 @@ class LoginRequest(PasswordValidation) :
 class LoginResponse(BaseModel) :
     access_token : str
     refresh_token : str
+    role : UserRoleEnum | None = None
 
 class LoginOauth2Response(BaseModel) :
     access_token : str
