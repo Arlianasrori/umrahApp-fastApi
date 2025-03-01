@@ -151,8 +151,9 @@ async def loginWithOauth2(token_google_id : str,Res : Response,platform : Platfo
             raise HttpException(400,"akun tidak ditemukan")
 
         token_payload = {"id" : findUserByEmail.id}
-
-        if findUserByEmail.role == UserRoleEnum.ADMIN.value :
+        if findUserByEmail.role == UserRoleEnum.SUPER_ADMIN.value :
+            token = create_token(token_payload,UserRoleEnum.SUPER_ADMIN)
+        elif findUserByEmail.role == UserRoleEnum.ADMIN.value :
             token = create_token(token_payload,UserRoleEnum.ADMIN)
         else :
             token = create_token(token_payload,UserRoleEnum.USER)
@@ -169,28 +170,29 @@ async def loginWithOauth2(token_google_id : str,Res : Response,platform : Platfo
     except Exception as err :
         raise HttpException(400,f"something wrong {err.args[0]}")
 
-async def adminLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -> LoginResponse :
-    findAdmin = (await session.execute(select(User).where(and_(User.email == auth.email,User.role == UserRoleEnum.ADMIN.value)))).scalar_one_or_none()
+async def adminAndSuperAdminLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -> LoginResponse :
+    findUser = (await session.execute(select(User).where(and_(User.email == auth.email,User.role == UserRoleEnum.ADMIN.value)))).scalar_one_or_none()
 
-    if not findAdmin :
+    if not findUser :
         raise HttpException(status=400,message="email atau password salah")
     
-    # isPassword = verify_hash_password(auth.password,findAdmin.password)
-    isPassword = auth.password == findAdmin.password
+    # isPassword = verify_hash_password(auth.password,findPassword.password)
+    isPassword = auth.password == findUser.password
 
     if not isPassword :
         raise HttpException(status=400,message="email atau password salah")
     
-    token_payload = {"id" : findAdmin.id}
+    token_payload = {"id" : findUser.id}
 
-    token = create_token(token_payload,UserRoleEnum.ADMIN)
+    token = create_token(token_payload,UserRoleEnum.SUPER_ADMIN if findUser.role == UserRoleEnum.SUPER_ADMIN.value else UserRoleEnum.ADMIN)
     Res.set_cookie("access_token",token["access_token"])
     Res.set_cookie("refresh_token",token["refresh_token"])
 
     return {
         "msg" : "login success",              
         "data" : {
-            **token
+            **token,
+            "role" : findUser.role
         }
     }  
 
