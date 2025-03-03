@@ -23,7 +23,7 @@ async def superAdminAuth(access_token: str | None = Cookie(None), req: Request =
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
         # Query database for superAdmin user
-        findsuperAdmin = (await Session.execute(select(User).where(and_(User.id == superAdmin["id"],User.role == UserRoleEnum.SUPER_superAdmin.value)))).scalar_one_or_none()
+        findsuperAdmin = (await Session.execute(select(User).where(and_(User.id == superAdmin["id"],User.role == UserRoleEnum.SUPER_ADMIN.value)))).scalar_one_or_none()
 
         if not findsuperAdmin:
             raise HttpException(status=401, message="invalid token(unauthorized)")

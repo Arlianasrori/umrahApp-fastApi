@@ -1,6 +1,6 @@
 from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, text
+from sqlalchemy import select, and_,or_, text
 
 # schemas
 from .authSchema import LoginRequest,LoginResponse,RefreshTokenResponse,ForgotPasswordResponse,RegisterRequest,LoginOauth2Response
@@ -171,7 +171,7 @@ async def loginWithOauth2(token_google_id : str,Res : Response,platform : Platfo
         raise HttpException(400,f"something wrong {err.args[0]}")
 
 async def adminAndSuperAdminLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -> LoginResponse :
-    findUser = (await session.execute(select(User).where(and_(User.email == auth.email,User.role == UserRoleEnum.ADMIN.value)))).scalar_one_or_none()
+    findUser = (await session.execute(select(User).where(and_(User.email == auth.email,or_(User.role == UserRoleEnum.ADMIN.value,User.role == UserRoleEnum.SUPER_ADMIN.value))))).scalar_one_or_none()
 
     if not findUser :
         raise HttpException(status=400,message="email atau password salah")

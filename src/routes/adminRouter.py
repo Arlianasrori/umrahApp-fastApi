@@ -25,7 +25,7 @@ from ..auth.auth_depends.admin.get_admin_auth import getAdminAuth
 adminRouter = APIRouter(prefix="/admin",dependencies=[Depends(adminAuth)])
 
 # auth_profile
-@adminRouter.get("/",response_model=ApiResponse[UserBase],tags=["ADMIN"])
+@adminRouter.get("/",response_model=ApiResponse[UserBase],tags=["ADMIN/AUTH-PROFILE"])
 async def get_admin(admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
     return await authProfileService.getAdmin(admin["id"],session)
 

@@ -22,7 +22,7 @@ class User(Base):
     roomUser = relationship("RoomUsers",back_populates="users")
     message_sender = relationship("Message",foreign_keys="[Message.sender_id]",back_populates="sender")
     message_receiver = relationship("Message",foreign_keys="[Message.receiver_id]",back_populates="receiver")
-    otp = relationship("OtpCode",back_populates="user")
+    otp = relationship("OtpCode",back_populates="user",cascade="all")
 
     def __repr__(self):
         return f"<User(name={self.name}, role={self.role})>"

@@ -27,9 +27,14 @@ async def register(auth : RegisterRequest = Depends(RegisterRequest.as_form),ses
 async def register_verify(auth : VerifyAccountRequest,session : sessionDepedency) :
     return await authService.verify_account(auth.id,auth.otp,session)
 
-@authRouter.post("/register/oauth2",response_model=ApiResponse[UserBase],tags=["AUTH/REGISTER"])
+# oatuh2
+@authRouter.post("/register/oauth2",response_model=ApiResponse[UserBase],tags=["AUTH/OAUTH2"])
 async def register_oauth2(auth : Oauth2Request,platform : authService.PlatformEnum,session : sessionDepedency) :
     return await authService.registerWithOauth2(auth.token_google_id,platform,session)
+
+@authRouter.post("/login/oauth2",response_model=ApiResponse[LoginOauth2Response],tags=["AUTH/OAUTH2"])
+async def login_oauth2(auth : Oauth2Request,platform : authService.PlatformEnum,Res : Response,session : sessionDepedency) :
+    return await authService.loginWithOauth2(auth.token_google_id,platform,Res,session)
 
 # admin and super admin auth
 @authRouter.post("/admin/login",response_model=ApiResponse[LoginResponse],tags=["AUTH/ADMINANDSUPERADMIN"])
@@ -53,12 +58,8 @@ async def user_login(auth : LoginRequest,Res : Response,session : sessionDepeden
 async def user_refresh_token(Req : Request,Res : Response) :
     return await authService.refresh_token(Req.siswa,UserRoleEnum.SISWA,Res)
 
-# all logout
-@authRouter.post("/login/oauth2",response_model=ApiResponse[LoginOauth2Response],tags=["AUTH/REGISTER"])
-async def login_oauth2(auth : Oauth2Request,platform : authService.PlatformEnum,Res : Response,session : sessionDepedency) :
-    return await authService.loginWithOauth2(auth.token_google_id,platform,Res,session)
-
-@authRouter.post("/logout",tags=["AUTH"])
+# all
+@authRouter.post("/logout",tags=["AUTH/ALL"])
 async def logout(Res : Response) :
     return await authService.logout(Res)
 
