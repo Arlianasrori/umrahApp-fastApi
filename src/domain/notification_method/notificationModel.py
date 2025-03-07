@@ -1,11 +1,9 @@
 from pydantic import BaseModel
+from ...utils.generateId_util import generate_id
 
 class AddNotificationModel(BaseModel):
-    id : int
-    id_siswa : int | None = None
-    id_guru_walas : int | None = None
-    id_guru_mapel : int | None = None
-    id_petugas_BK : int | None = None
+    id : int = generate_id()
+    user_id : int
     title : str
     body : str
 

@@ -12,7 +12,8 @@ class User(Base):
     password = Column(String,nullable=True)
     role = Column(Enum(UserRoleEnum), nullable=False)
     foto_profile = Column(String,nullable=True)
-    verified = Column(Boolean,default=False)                                                                            
+    verified = Column(Boolean,default=False)  
+    fcm_token = Column(String,nullable=True)                                              
 
     package = relationship("Package", back_populates="user")
     booking = relationship("Booking", back_populates="user")

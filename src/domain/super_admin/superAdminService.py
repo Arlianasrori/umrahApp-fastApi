@@ -39,7 +39,7 @@ async def addAdmin(admin : AddAdminRequest,session : AsyncSession) -> UserBase:
         raise HttpException(400,"email already exist")
     
     adminMapping = admin.model_dump(exclude={"foto_profile"})
-    adminMapping.update({"id" : generate_id(),"role" : UserRoleEnum.SUPER_ADMIN.value,"verified" : True,"password" : create_hash_password(adminMapping["password"])})
+    adminMapping.update({"id" : generate_id(),"role" : UserRoleEnum.ADMIN.value,"verified" : True,"password" : create_hash_password(adminMapping["password"])})
 
     if admin.foto_profile :
         ext_file = admin.foto_profile.filename.split(".")

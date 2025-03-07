@@ -87,7 +87,7 @@ async def verify_account(id : int,otp : str,session : AsyncSession) -> bool :
         raise HttpException(400,"otp invalid")
     
     if datetime.now() > findOtpUser[0].expires_at :
-        await session.delete(findOtpUser)
+        await session.delete(findOtpUser[0])
         await session.commit()
         raise HttpException(400,"token expires")
     if findOtpUser[0].otp != otp :
@@ -176,8 +176,10 @@ async def adminAndSuperAdminLogin(auth : LoginRequest,Res : Response,session : A
     if not findUser :
         raise HttpException(status=400,message="email atau password salah")
     
-    # isPassword = verify_hash_password(auth.password,findPassword.password)
-    isPassword = auth.password == findUser.password
+    if findUser.role == UserRoleEnum.SUPER_ADMIN :
+        isPassword = auth.password == findUser.password
+    else :
+        isPassword = verify_hash_password(auth.password,findUser.password)
 
     if not isPassword :
         raise HttpException(status=400,message="email atau password salah")
