@@ -1,6 +1,6 @@
 from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, text
+from sqlalchemy import select, and_,or_, text
 
 # schemas
 from .authSchema import LoginRequest,LoginResponse,RefreshTokenResponse,ForgotPasswordResponse,RegisterRequest,LoginOauth2Response
@@ -87,7 +87,7 @@ async def verify_account(id : int,otp : str,session : AsyncSession) -> bool :
         raise HttpException(400,"otp invalid")
     
     if datetime.now() > findOtpUser[0].expires_at :
-        await session.delete(findOtpUser)
+        await session.delete(findOtpUser[0])
         await session.commit()
         raise HttpException(400,"token expires")
     if findOtpUser[0].otp != otp :
@@ -171,13 +171,15 @@ async def loginWithOauth2(token_google_id : str,Res : Response,platform : Platfo
         raise HttpException(400,f"something wrong {err.args[0]}")
 
 async def adminAndSuperAdminLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -> LoginResponse :
-    findUser = (await session.execute(select(User).where(and_(User.email == auth.email,User.role == UserRoleEnum.ADMIN.value)))).scalar_one_or_none()
+    findUser = (await session.execute(select(User).where(and_(User.email == auth.email,or_(User.role == UserRoleEnum.ADMIN.value,User.role == UserRoleEnum.SUPER_ADMIN.value))))).scalar_one_or_none()
 
     if not findUser :
         raise HttpException(status=400,message="email atau password salah")
     
-    # isPassword = verify_hash_password(auth.password,findPassword.password)
-    isPassword = auth.password == findUser.password
+    if findUser.role == UserRoleEnum.SUPER_ADMIN :
+        isPassword = auth.password == findUser.password
+    else :
+        isPassword = verify_hash_password(auth.password,findUser.password)
 
     if not isPassword :
         raise HttpException(status=400,message="email atau password salah")

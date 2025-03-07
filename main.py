@@ -32,7 +32,7 @@ App = FastAPI(
 )
 
 # Add routers to the application
-routes = [authRouter,adminRouter,userRouter,superAdminRouter]
+routes = [authRouter,superAdminRouter,adminRouter,userRouter]
 for router in routes:
     App.include_router(router)
 

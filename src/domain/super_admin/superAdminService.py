@@ -20,7 +20,7 @@ from multiprocessing import Process
 
 # auth-profile
 async def getSuperAdmin(id_super_admin : int,session : AsyncSession) -> UserBase :
-    findSuperAdmin = (await session.execute(select(User).where(and_(User.id == id_super_admin,User.role == UserRoleEnum.ADMIN)))).scalar_one_or_none()
+    findSuperAdmin = (await session.execute(select(User).where(and_(User.id == id_super_admin,User.role == UserRoleEnum.SUPER_ADMIN)))).scalar_one_or_none()
     if not findSuperAdmin :
         raise HttpException(404,f"super admin tidak ditemukan")
 
@@ -35,23 +35,24 @@ FOTO_PROFILE_BASE_URL = os.getenv("USER_PROFILE_BASE_URL")
 async def addAdmin(admin : AddAdminRequest,session : AsyncSession) -> UserBase:
     findUserByEmail = (await session.execute(select(User).where(User.email == admin.email))).scalar_one_or_none()
 
-    if findUserByEmail is None :
+    if findUserByEmail :
         raise HttpException(400,"email already exist")
     
     adminMapping = admin.model_dump(exclude={"foto_profile"})
-    adminMapping.update({"id" : generate_id(),"verified" : True,"password" : create_hash_password(adminMapping["password"])})
+    adminMapping.update({"id" : generate_id(),"role" : UserRoleEnum.ADMIN.value,"verified" : True,"password" : create_hash_password(adminMapping["password"])})
 
-    ext_file = admin.foto_profile.filename.split(".")
+    if admin.foto_profile :
+        ext_file = admin.foto_profile.filename.split(".")
 
-    if ext_file[-1] not in ["jpg","png","jpeg"] :
-        raise HttpException(400,f"file harus berupa gambar")
+        if ext_file[-1] not in ["jpg","png","jpeg"] :
+            raise HttpException(400,f"file harus berupa gambar")
 
-    file_name = f"{generate_id()}-{admin.foto_profile.filename.split(' ')[0].split('.')[0]}.{ext_file[-1]}"
-    file_name_save = f"{FOTO_PROFILE_STORE}{file_name}"
+        file_name = f"{generate_id()}-{admin.foto_profile.filename.split(' ')[0].split('.')[0]}.{ext_file[-1]}"
+        file_name_save = f"{FOTO_PROFILE_STORE}{file_name}"
 
-    async with aiofiles.open(file_name_save, "wb") as f:
-        await f.write(admin.foto_profile.file.read())
-        adminMapping["foto_profile"] = f"{FOTO_PROFILE_BASE_URL}/{file_name}"
+        async with aiofiles.open(file_name_save, "wb") as f:
+            await f.write(admin.foto_profile.file.read())
+            adminMapping["foto_profile"] = f"{FOTO_PROFILE_BASE_URL}/{file_name}"
 
     session.add(User(**adminMapping))
     await session.commit()

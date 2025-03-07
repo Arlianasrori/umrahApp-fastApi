@@ -8,13 +8,16 @@ from ....models.package_model import Package,Booking
 from .bookingSchema import GetPackageContainsBookingResponsePag,GetPackageContainsBooking,GetAllPackagesQuery,UpdateBookingStatusRequest
 from ...schemas.package_schema import PackageWithBooking, BookingWithUserPrice
 
+# service
+from ...notification_method.notificationService import sendNotificationThreadProccess
+
 # types
 from ....types.package_types import BookingStatusEnum
 
 # common
 import math
 from ....error.errorHandling import HttpException
-import os
+from copy import deepcopy
 
 async def getAllPackageContainsBooking(admin : dict,query : GetAllPackagesQuery,session:AsyncSession) -> list[GetPackageContainsBooking] | GetPackageContainsBookingResponsePag:
     statementSelectPackage = select(Package).where(and_(Package.id == admin["id"], Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
@@ -70,8 +73,14 @@ async def updateBookingStatus(admin : dict, id_booking : int,request : UpdateBoo
     findBooking = (await session.execute(select(Booking).where(and_(Booking.id == id_booking, Booking.package.and_(Package.add_by_admin == admin["id"]))))).scalar_one_or_none()
     if not findBooking :
         raise HttpException(404,f"booking not found")
+    
     findBooking.status = request.status
+
+    bookingDictCopy = deepcopy(findBooking.__dict__)
     await session.commit()
+
+    sendNotificationThreadProccess({"user_id" : bookingDictCopy["user_id"],"title" : "Admin Telah Mengupdate Booking Status Anda","body" : f"Admin Telah Mengupdate Booking Status Anda Dengan {bookingDictCopy["status"]}"})
+
     return {
         "msg" : "success",
         "data" : findBooking

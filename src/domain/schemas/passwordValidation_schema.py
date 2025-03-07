@@ -5,6 +5,8 @@ class PasswordValidation(BaseModel) :
 
     @field_validator('password')
     def validate_password(cls, v):
+        if v is None :
+            return None
         if len(v) < 8:
             raise ValueError("Password minimal 8 karakter")
         elif " " in v :

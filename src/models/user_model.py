@@ -12,7 +12,8 @@ class User(Base):
     password = Column(String,nullable=True)
     role = Column(Enum(UserRoleEnum), nullable=False)
     foto_profile = Column(String,nullable=True)
-    verified = Column(Boolean,default=False)                                                                            
+    verified = Column(Boolean,default=False)  
+    fcm_token = Column(String,nullable=True)                                              
 
     package = relationship("Package", back_populates="user")
     booking = relationship("Booking", back_populates="user")
@@ -22,7 +23,7 @@ class User(Base):
     roomUser = relationship("RoomUsers",back_populates="users")
     message_sender = relationship("Message",foreign_keys="[Message.sender_id]",back_populates="sender")
     message_receiver = relationship("Message",foreign_keys="[Message.receiver_id]",back_populates="receiver")
-    otp = relationship("OtpCode",back_populates="user")
+    otp = relationship("OtpCode",back_populates="user",cascade="all")
 
     def __repr__(self):
         return f"<User(name={self.name}, role={self.role})>"

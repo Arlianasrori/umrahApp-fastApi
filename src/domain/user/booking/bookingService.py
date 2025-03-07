@@ -12,6 +12,9 @@ from ...schemas.package_schema import BookingBase, PackageWithPrices, BookingWit
 # type
 from ....models.package_model import BookingStatusEnum
 
+# service
+from ...notification_method.notificationService import sendNotificationThreadProccess
+
 # common
 from ....error.errorHandling import HttpException
 from ....utils.generateId_util import generate_id
@@ -19,7 +22,7 @@ from datetime import datetime
 from copy import deepcopy
 
 async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSession) -> BookingBase:
-    findPackagePrice = (await session.execute(select(PackagePrices).where(PackagePrices.id == request.packages_price_id))).scalar_one_or_none()
+    findPackagePrice = (await session.execute(select(PackagePrices).options(joinedload(PackagePrices.package)).where(PackagePrices.id == request.packages_price_id))).scalar_one_or_none()
 
     if not findPackagePrice:
         raise HttpException(status_code=404,detail="Package price not found")
@@ -50,8 +53,11 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     bookingMapping = request.model_dump()   
     bookingMapping.update({"id" : generate_id(),"user_id" : user["id"],"booking_date" : datetime.now(),"total_price" : request.total_price,"status" : BookingStatusEnum.PENDING})
 
+    packageDictCopy = deepcopy(findPackagePrice.package.__dict__) 
     session.add(Booking(**bookingMapping))
     await session.commit()
+    
+    sendNotificationThreadProccess({"user_id" : packageDictCopy["add_by_admin"],"title" : "Booking Berhasil!","body" : f"Booking berhasil, silahkan melakukan pembayaran"})
 
     return {
         "msg" : "success",
@@ -59,7 +65,7 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     }
 
 async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> BookingBase:
-    findBooking = (await session.execute(select(Booking).where(and_(Booking.id == booking_id,Booking.user_id == user["id"])))).scalar_one_or_none()
+    findBooking = (await session.execute(select(Booking).options(joinedload(Booking.package)).where(and_(Booking.id == booking_id,Booking.user_id == user["id"])))).scalar_one_or_none()
 
     if not findBooking:
         raise HttpException(status_code=404,detail="Booking not found")
@@ -67,6 +73,8 @@ async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> Bo
     findBooking.status = BookingStatusEnum.CANCELLED.value
     bookingDictCopy = deepcopy(findBooking.__dict__)
     await session.commit()
+
+    sendNotificationThreadProccess({"user_id" : bookingDictCopy["package"].add_by_admin,"title" : "Booking Berhasil Dibatalkan","body" : f"Booking berhasil Dibatalkan"})
 
     return {
         "msg" : "success",
