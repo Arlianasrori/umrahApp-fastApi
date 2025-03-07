@@ -23,6 +23,10 @@ from src.routes.adminRouter import adminRouter
 from src.routes.userRouter import userRouter
 from src.routes.superAdminRouter import superAdminRouter
 
+# socket
+from src.socket.socket import socket_app
+from src.socket.socket_connection_handling import handle_socket_connection
+
 # Initialize FastAPI application with configuration
 App = FastAPI(
     title="API SPEC FOR PRESISI APP",
@@ -52,8 +56,14 @@ App.add_middleware(
 # Mount static directory for public files
 App.mount("/public", StaticFiles(directory="src/public"), name="public")
 
+# mount socket app
+App.mount("/socket",app=socket_app)
+
 # Add error handling to the application
 add_exception_server(App)
+
+# running handle socket connection
+handle_socket_connection()
 
 # Function to run the server
 async def runServer():

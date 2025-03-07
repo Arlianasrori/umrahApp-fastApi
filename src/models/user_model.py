@@ -20,7 +20,7 @@ class User(Base):
     rating = relationship("Rating", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
     notification_reads = relationship("NotificationRead", back_populates="user")
-    roomUser = relationship("RoomUsers",back_populates="users")
+    roomUser = relationship("RoomUsers",back_populates="user")
     message_sender = relationship("Message",foreign_keys="[Message.sender_id]",back_populates="sender")
     message_receiver = relationship("Message",foreign_keys="[Message.receiver_id]",back_populates="receiver")
     otp = relationship("OtpCode",back_populates="user",cascade="all")
