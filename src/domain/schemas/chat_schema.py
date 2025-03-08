@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
-from package_schema import PackageBase
-from user_schema import UserBase
+from ..schemas.package_schema import PackageBase
+from ..schemas.user_schema import UserBase
 
 class MediaMessageBase(BaseModel) :
     id : int

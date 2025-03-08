@@ -22,6 +22,7 @@ from src.routes.authRouter import authRouter
 from src.routes.adminRouter import adminRouter
 from src.routes.userRouter import userRouter
 from src.routes.superAdminRouter import superAdminRouter
+from src.routes.chatRouter import chatRouter
 
 # socket
 from src.socket.socket import socket_app
@@ -36,7 +37,7 @@ App = FastAPI(
 )
 
 # Add routers to the application
-routes = [authRouter,superAdminRouter,adminRouter,userRouter]
+routes = [authRouter,superAdminRouter,adminRouter,userRouter,chatRouter]
 for router in routes:
     App.include_router(router)
 

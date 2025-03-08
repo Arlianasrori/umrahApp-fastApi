@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from ...types.user_types import UserRoleEnum
 from ...error.errorHandling import HttpException
 
-def create_token(data : dict,type : UserRoleEnum) :
+def create_token(data : dict) :
     try :
         access_env = f"{type.value}_SECRET_ACCESS_TOKEN"
         refresh_env = f"{type.value}_SECRET_REFRESH_TOKEN"

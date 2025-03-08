@@ -6,7 +6,7 @@ import datetime
 class RoomUsers(Base):
     __tablename__ = "room_users"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id',ondelete="CASCADE"))
     room_id = Column(Integer, ForeignKey('room.id',ondelete="CASCADE"))
     deleted = Column(Boolean, default=False) 
@@ -54,7 +54,7 @@ class Message(Base) :
 class MediaMessage(Base):
     __tablename__ = "media_message"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
     type = Column(String)  # Type of media (image, video, etc.)
     url = Column(String)
     message_id = Column(Integer, ForeignKey("message.id"))
