@@ -12,10 +12,7 @@ from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
 from ..types.user_types import UserRoleEnum
 
 # depends
-from ..auth.auth_depends.admin.depend_refresh_auth_admin import adminrefreshAuth
-from ..auth.auth_depends.user.depend_refresh_auth_user import userrefreshAuth
-from ..auth.auth_depends.super_admin.depend_refresh_auth_super_admin import superAdminrefreshAuth
-
+from ..auth.auth_depends.alluser.depend_refresh_auth_alluser import allUserRefreshAuth
 
 authRouter = APIRouter(prefix="/auth")
 
@@ -41,11 +38,11 @@ async def login_oauth2(auth : Oauth2Request,platform : authService.PlatformEnum,
 async def admin_login(auth : LoginRequest,Res : Response,session : sessionDepedency) :
     return await authService.adminAndSuperAdminLogin(auth,Res,session)
 
-@authRouter.post("/superAdmin/refreshToken",dependencies=[Depends(superAdminrefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
+@authRouter.post("/superAdmin/refreshToken",dependencies=[Depends(allUserRefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
 async def super_admin_refresh_token(Req : Request,Res : Response) :
     return await authService.refresh_token(Req.admin,UserRoleEnum.SUPER_ADMIN,Res)
 
-@authRouter.post("/admin/refreshToken",dependencies=[Depends(adminrefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
+@authRouter.post("/admin/refreshToken",dependencies=[Depends(allUserRefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/ADMIN"])
 async def admin_refresh_token(Req : Request,Res : Response) :
     return await authService.refresh_token(Req.admin,UserRoleEnum.ADMIN,Res)
 
@@ -54,7 +51,7 @@ async def admin_refresh_token(Req : Request,Res : Response) :
 async def user_login(auth : LoginRequest,Res : Response,session : sessionDepedency) :
     return await authService.userLogin(auth,Res,session)
 
-@authRouter.post("/user/refreshToken",dependencies=[Depends(userrefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/USER"])
+@authRouter.post("/user/refreshToken",dependencies=[Depends(allUserRefreshAuth)],response_model=ApiResponse[RefreshTokenResponse],tags=["AUTH/USER"])
 async def user_refresh_token(Req : Request,Res : Response) :
     return await authService.refresh_token(Req.siswa,UserRoleEnum.SISWA,Res)
 

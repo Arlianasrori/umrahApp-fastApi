@@ -1,5 +1,5 @@
 from fastapi import Cookie, Request
-from sqlalchemy import and_
+from sqlalchemy import and_,or_
 from ....models.user_model import User
 from ....error.errorHandling import HttpException
 from ....db.sessionDepedency import sessionDepedency
@@ -9,27 +9,29 @@ import os
 from ....types.user_types import UserRoleEnum
 
 # Secret key for JWT token verification
-SECRET_KEY = os.getenv("SUPER_ADMIN_SECRET_REFRESH_TOKEN")
+SECRET_KEY = os.getenv("USER_SECRET_ACCESS_TOKEN")
 
-async def superAdminrefreshAuth(refresh_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
-    print(refresh_token)
-    if not refresh_token:
+async def allUserAuth(access_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
+    if not access_token:
         raise HttpException(status=401, message="invalid token(unauthorized)")
     try:
         # Decode and verify JWT token
-        superAdmin = jwt.decode(refresh_token, SECRET_KEY, algorithms="HS256")
+        user = jwt.decode(access_token, SECRET_KEY, algorithms="HS256")
 
-        if not superAdmin:
+        if not user:
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
-        # Query database for superAdmin user
-        findsuperAdmin = (await Session.execute(select(User).where(and_(User.id == superAdmin["id"],User.role == UserRoleEnum.SUPER_ADMIN.value)))).scalar_one_or_none()
+        # Query database for admin user
+        findUser = (await Session.execute(select(User).where(and_(User.id == user["id"])))).scalar_one_or_none()
 
-        if not findsuperAdmin:
+        if not findUser:
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
-        # Attach superAdmin info to request object
-        req.superAdmin = findsuperAdmin.__dict__
+        if not findUser.verified :
+            raise HttpException(401, "user not verified")
+        
+        # Attach admin info to request object
+        req.allUser = findUser.__dict__
     except JWTError as error:
         # Handle JWT decoding errors
         raise HttpException(status=401, message=str(error.args[0]))

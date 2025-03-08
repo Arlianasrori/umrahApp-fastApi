@@ -76,6 +76,7 @@ class GetAllPackagesQuery(BaseModel) :
     limit : int = 10
     start_date : date | None = None
     end_date : date | None = None
+    name : str | None = None
 
 class GetStatistikRating(BaseModel) :
     count_rating : int = 0
