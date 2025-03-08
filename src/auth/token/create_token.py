@@ -1,12 +1,11 @@
 import os
 from jose import JWTError, jwt
-from ...types.user_types import UserRoleEnum
 from ...error.errorHandling import HttpException
 
 def create_token(data : dict) :
     try :
-        access_env = f"{type.value}_SECRET_ACCESS_TOKEN"
-        refresh_env = f"{type.value}_SECRET_REFRESH_TOKEN"
+        access_env = f"USER_SECRET_ACCESS_TOKEN"
+        refresh_env = f"USER_SECRET_REFRESH_TOKEN"
         ACCESS_KEY = os.getenv(access_env)
         REFRESH_KEY = os.getenv(refresh_env)
         print(ACCESS_KEY)
