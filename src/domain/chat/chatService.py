@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload, subqueryload, selectinload
 # models
 from ...models.user_model import User
 from ...models.chat_model import RoomUsers,Room,Message,MediaMessage
+from ...models.package_model import Package
 
 # schemas
 from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
@@ -15,11 +16,28 @@ import aiofiles
 from copy import deepcopy
 from ...error.errorHandling import HttpException
 from ...utils.generateId_util import generate_id
-from ...utils.updateTable_util import updateTable
 from datetime import datetime
 import os
+from ...socket.socket_connection_handling import sio,getUserSid
+
 
 async def startChat(user : dict,message : AddMessageRequest,session : AsyncSession) -> MessageBase :
+    findUser = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
+
+    if not findUser :
+        raise HttpException(404,"user not found")
+    
+    packageDictCopy = None
+    if message.package_id :
+        findPackage = (await session.execute(select(Package).where(Package.id == message.package_id))).scalar_one_or_none()
+
+        if findPackage is None :
+            raise HttpException(404,"package is not found")
+        
+        packageDictCopy = deepcopy(findPackage.__dict__)
+        packageDictCopy.pop("_sa_instance_state")
+
+    
     findRoom = (await session.execute(select(Room).options(subqueryload(Room.roomUser)).where(Room.roomUser.any(or_(RoomUsers.user_id == user["id"],RoomUsers.user_id == message.receiver_id))))).scalars().all()
 
     # mencari room yang berisi user dengan user id == id pengirim dan user id == id penerima
@@ -39,6 +57,7 @@ async def startChat(user : dict,message : AddMessageRequest,session : AsyncSessi
             
     print(roomExist)
     room_id = None
+
     # roomForResponse = {}
     if roomExist is None :
         roomMapping = {"id" : generate_id(),"created_at" : datetime.utcnow(),"updated_at" : datetime.utcnow()}
@@ -59,9 +78,15 @@ async def startChat(user : dict,message : AddMessageRequest,session : AsyncSessi
 
         # roomForResponse = deepcopy(findRoom[0].__dict__)
     
-    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : None,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
+    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
     session.add(Message(**messageMapping))
     await session.commit()
+    await session.refresh(findUser)
+
+    # send new room to socket client
+    user_sid = await getUserSid(findUser.id)
+    if user_sid :
+        await sio.emit("start_chat",{"room_id" : room_id,"to_user_name" : findUser.name,"to_user_id" : findUser.name,"last_message" : message.message,"last_message_time" : messageMapping["created_at"],"count_not_read_message" : 1,"package" : packageDictCopy},user_sid) 
 
     return {
         "msg" : "success",
@@ -74,9 +99,24 @@ async def newMessage(user : dict,room_id : int,message : AddMessageRequest,sessi
     if not findRoom :
         raise HttpException(404,"room is not found")
     
-    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : None,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
+    packageDictCopy = None
+    if message.package_id :
+        findPackage = (await session.execute(select(Package).where(Package.id == message.package_id))).scalar_one_or_none()
+
+        if findPackage is None :
+            raise HttpException(404,"package is not found")
+        
+        packageDictCopy = deepcopy(findPackage.__dict__)
+        packageDictCopy.pop("_sa_instance_state")
+    
+    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
     session.add(Message(**messageMapping))
     await session.commit()
+
+    # send new message to socket client
+    user_sid = await getUserSid(messageMapping["receiver_id"])
+    if user_sid :
+        await sio.emit("new_message",{**messageMapping,"package" : packageDictCopy})
 
     return {
         "msg" : "success",
@@ -96,7 +136,13 @@ async def updateMessage(user : dict,message_id : int,message : UpdateMessageRequ
     findMessage.updated_at = datetime.utcnow()
 
     messageDictCopy = deepcopy(findMessage.__dict__)
+    messageDictCopy.pop("_sa_instance_state") # pop that, so that can send for socket connection
     await session.commit()
+
+    # update message to socket client
+    user_sid = await getUserSid(messageDictCopy["receiver_id"])
+    if user_sid :
+        await sio.emit("update_message",messageDictCopy)
 
     return {
         "msg" : "success",
@@ -113,8 +159,14 @@ async def deleteMessage(user : dict,message_id : int,session : AsyncSession) -> 
         raise HttpException(403,"just sender can delete message")
 
     messageDictCopy = deepcopy(findMessage.__dict__)
+    messageDictCopy.pop("_sa_instance_state") # pop that, so that can send for socket connection
     await session.delete(findMessage)
     await session.commit()
+
+    # update message to socket client
+    user_sid = await getUserSid(messageDictCopy["receiver_id"])
+    if user_sid :
+        await sio.emit("delete_message",messageDictCopy)
 
     return {
         "msg" : "success",
@@ -125,6 +177,11 @@ CHAT_MEDIA_STORE = os.getenv("CHAT_MEDIA_BASE_STORE")
 CHAT_MEDIA_BASE_URL = os.getenv("CHAT_MEDIA_BASE_URL")
 
 async def addMediaMessage(message_id : int,file : UploadFile, session : AsyncSession) -> MediaMessageBase :
+    findMessage = (await session.execute(select(Message).where(Message.id == message_id))).scalar_one_or_none()
+
+    if not findMessage:
+        raise HttpException(404,"message is not found")
+    
     ext_file = file.filename.split(".")
     file_name = f"{generate_id()}-{file.filename.split(' ')[0]}.{ext_file[-1]}"
     file_name_save = f"{CHAT_MEDIA_STORE}{file_name}"
@@ -135,19 +192,35 @@ async def addMediaMessage(message_id : int,file : UploadFile, session : AsyncSes
         mediaMessageMapping = {"id" : generate_id(),"type" : file.content_type,"url" : f"{CHAT_MEDIA_BASE_URL}/{file_name}","message_id" : message_id}
         session.add(MediaMessage(**mediaMessageMapping))
         await session.commit()
+        await session.refresh(findMessage)
         mediaMessageResponse = mediaMessageMapping
     
+    # send media message to socket client
+    user_sid = await getUserSid(findMessage.receiver_id)
+    if user_sid :
+        await sio.emit("new_media_message",mediaMessageResponse)
+
     return {
         "msg" : "success",
         "data" : mediaMessageResponse
     }
 
 async def readMessage(user : dict,room_id : int,session : AsyncSession) :
+    findRoom = (await session.execute(select(Room).options(subqueryload(Room.roomUser.and_(RoomUsers.user_id != user["id"]))).where(Room.id == room_id))).scalar_one_or_none()
+
+    if findRoom is None :
+        raise HttpException(404,"room is not found")
     await session.execute(
         text("UPDATE message SET is_read = true where receiver_id = :user_id and room_id = :room_id"),
         {"user_id": user["id"],"room_id" : room_id}
     )
     await session.commit()
+    await session.refresh(findRoom)
+
+    # send media message to socket client
+    user_sid = await getUserSid(findRoom.roomUser[0].user_id) if len(findRoom.roomUser) > 0 else None
+    if user_sid :
+        await sio.emit("read_message",{"room_id" : room_id})
 
     return {
         "msg" : "success"
