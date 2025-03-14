@@ -3,6 +3,7 @@ from datetime import datetime
 
 class AddMessageRequest(BaseModel) :
     receiver_id : int
+    package_id : int | None = None
     message : str
 
 class UpdateMessageRequest(BaseModel) :

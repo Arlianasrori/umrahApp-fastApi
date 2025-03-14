@@ -31,3 +31,14 @@ def handle_socket_connection() :
             # Menghapus pengguna dari daftar online
             del online_users[sid]
             print("disconnect")
+
+async def getUserSid(user_id : int) -> int | None :
+    # Looping untuk setiap pengguna online
+    for user in online_users.items():
+        sid, user = user
+
+        # Memeriksa apakah user_id sama dengan id_user
+        if user["user_id"] == user_id :
+            return sid
+    
+    return None

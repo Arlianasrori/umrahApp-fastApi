@@ -17,6 +17,7 @@ import os
 import asyncio
 from multiprocessing import Process
 from copy import deepcopy
+from ...socket.socket_connection_handling import sio,getUserSid
 
 # Inisialisasi SDK dengan file kunci layanan Anda
 cred = credentials.Certificate(f"{os.getcwd()}/{os.getenv("FCM_PATH_KEY")}")
@@ -37,6 +38,10 @@ async def addNotification(data : AddNotificationModel) -> None:
             userDictCopy = deepcopy(findUser.__dict__)
             await session.commit()
             await session.reset()
+
+            user_sid = await getUserSid(data.user_id)
+            if user_sid :
+                await sio.emit("new_notification",data.model_dump(),user_sid)
 
             # send notificatio to user using firebase cloud messaging
             if userDictCopy["fcm_token"] and id :
