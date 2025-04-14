@@ -27,6 +27,7 @@ async def getUser(id_user : int,session : AsyncSession) -> UserBase :
         "msg" : "success",
         "data" : findUser
     }
+  
 FOTO_PROFILE_STORE = os.getenv("USER_PROFILE_BASE_STORE")
 FOTO_PROFILE_BASE_URL = os.getenv("USER_PROFILE_BASE_URL")
 async def updateProfile(id_user : int,profile : UpdateProfileRequest,session : AsyncSession) -> UserBase :

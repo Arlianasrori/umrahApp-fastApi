@@ -30,10 +30,10 @@ from src.socket.socket_connection_handling import handle_socket_connection
 
 # Initialize FastAPI application with configuration
 App = FastAPI(
-    title="API SPEC FOR PRESISI APP",
-    description="This is the API specification for absensi App, it can be your guide in consuming the API. Please pay attention to the required fields in this API specification",
+    title="API SPEC FOR TRAVEL APP",
+    description="This is the API specification for travel App, it can be your guide in consuming the API. Please pay attention to the required fields in this API specification.For the chatting feature with socket, you can refer to the following documentation : {serverUrl}/documentation/chat_socket_documentation.md",
     servers=[{"url": "http://localhost:2008", "description": "development server"}],
-    contact={"name": "Habil Arlian Asrori", "email": "arlianasrori@gmail.com"}
+    contact={"name": "Habil Arlian Asrori", "email": "arlianasrori@gmail.com"},
 )
 
 # Add routers to the application
@@ -56,6 +56,9 @@ App.add_middleware(
 
 # Mount static directory for public files
 App.mount("/public", StaticFiles(directory="src/public"), name="public")
+
+# Mount docs directory for public files
+App.mount("/documentation", StaticFiles(directory="docs"), name="documentation")
 
 # mount socket app
 App.mount("/socket",app=socket_app)
