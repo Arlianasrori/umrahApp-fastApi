@@ -153,12 +153,7 @@ async def loginWithOauth2(token_google_id : str,Res : Response,platform : Platfo
             raise HttpException(400,"akun tidak ditemukan")
 
         token_payload = {"id" : findUserByEmail.id}
-        if findUserByEmail.role == UserRoleEnum.SUPER_ADMIN.value :
-            token = create_token(token_payload,UserRoleEnum.SUPER_ADMIN)
-        elif findUserByEmail.role == UserRoleEnum.ADMIN.value :
-            token = create_token(token_payload,UserRoleEnum.ADMIN)
-        else :
-            token = create_token(token_payload,UserRoleEnum.USER)
+        token = create_token(token_payload)
         Res.set_cookie("access_token",token["access_token"])
         Res.set_cookie("refresh_token",token["refresh_token"])
 
@@ -188,7 +183,7 @@ async def adminAndSuperAdminLogin(auth : LoginRequest,Res : Response,session : A
     
     token_payload = {"id" : findUser.id}
 
-    token = create_token(token_payload,UserRoleEnum.SUPER_ADMIN if findUser.role == UserRoleEnum.SUPER_ADMIN.value else UserRoleEnum.ADMIN)
+    token = create_token(token_payload)
     Res.set_cookie("access_token",token["access_token"])
     Res.set_cookie("refresh_token",token["refresh_token"])
 
@@ -216,7 +211,7 @@ async def userLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -
 
     token_payload = {"id" : findUser.id}
 
-    token = create_token(token_payload,UserRoleEnum.USER)
+    token = create_token(token_payload)
     Res.set_cookie("access_token",token["access_token"])
     Res.set_cookie("refresh_token",token["refresh_token"])
 
@@ -228,10 +223,10 @@ async def userLogin(auth : LoginRequest,Res : Response,session : AsyncSession) -
     }
         
     
-async def refresh_token(data,envSecretType : UserRoleEnum,Res : Response) -> RefreshTokenResponse :
+async def refresh_token(data,Res : Response) -> RefreshTokenResponse :
     token_payload = {"id" : data["id"]}
 
-    token = create_token(token_payload,envSecretType)
+    token = create_token(token_payload)
     Res.set_cookie("access_token",token["access_token"],httponly=True,max_age="24 * 60 * 60 * 60")
     Res.set_cookie("refresh_token",token["refresh_token"],httponly=True,max_age="24 * 60 * 60 * 60 * 60")
     return {
