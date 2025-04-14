@@ -72,7 +72,7 @@ async def updatePackage(admin : dict, id_package : int,request : UpdatePackageRe
 
     packageDictCopy = deepcopy(findPackage.__dict__)
     await session.commit()
-    if request.image :
+    if findPackage.image :
         remoove_image_process = Process(target=os.remove, args=(f"{IMAGE_PACKAGE_STORE}{file_name_before}",))
         remoove_image_process.start()
 
