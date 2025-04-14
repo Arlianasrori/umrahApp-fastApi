@@ -51,6 +51,7 @@ async def addNotification(data : AddNotificationRequest) -> None:
             # send notificatio to user using firebase cloud messaging
             if userDictCopy["fcm_token"] and id :
                 await kirim_pesan_fcm(userDictCopy["fcm_token"], data.title, data.body,userDictCopy["id"],data.id,FCMType.notification)
+
         except Exception as e:
             print(f"Terjadi kesalahan: pada notificationService.py {e}")
         finally :
