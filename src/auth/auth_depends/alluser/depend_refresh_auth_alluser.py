@@ -9,27 +9,27 @@ import os
 from ....types.user_types import UserRoleEnum
 
 # Secret key for JWT token verification
-SECRET_KEY = os.getenv("ADMIN_SECRET_REFRESH_TOKEN")
+SECRET_KEY = os.getenv("USER_SECRET_REFRESH_TOKEN")
 
-async def adminrefreshAuth(refresh_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
+async def allUserRefreshAuth(refresh_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
     print(refresh_token)
     if not refresh_token:
         raise HttpException(status=401, message="invalid token(unauthorized)")
     try:
         # Decode and verify JWT token
-        admin = jwt.decode(refresh_token, SECRET_KEY, algorithms="HS256")
+        user = jwt.decode(refresh_token, SECRET_KEY, algorithms="HS256")
 
-        if not admin:
+        if not user:
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
         # Query database for admin user
-        findAdmin = (await Session.execute(select(User).where(and_(User.id == admin["id"],User.role == UserRoleEnum.ADMIN.value)))).scalar_one_or_none()
+        findUser = (await Session.execute(select(User).where(and_(User.id == user["id"])))).scalar_one_or_none()
 
-        if not findAdmin:
+        if not findUser:
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
         # Attach admin info to request object
-        req.admin = findAdmin.__dict__
+        req.User = findUser.__dict__
     except JWTError as error:
         # Handle JWT decoding errors
         raise HttpException(status=401, message=str(error.args[0]))
