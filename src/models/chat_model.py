@@ -38,6 +38,7 @@ class Message(Base) :
     sender_id = Column(Integer,ForeignKey("user.id"),nullable=False)
     receiver_id = Column(Integer,ForeignKey("user.id"),nullable=False)
     id_package = Column(Integer,ForeignKey("package.id"),nullable=True)
+    package_prices_id = Column(Integer,ForeignKey("package_prices.id"),nullable=True)
     is_read = Column(Boolean,nullable=False,default=False)
     created_at = Column(DateTime,nullable=False,default=datetime.datetime.utcnow())
     updated_at = Column(DateTime,nullable=False,default=datetime.datetime.utcnow(),onupdate=datetime.datetime.utcnow())
@@ -46,6 +47,7 @@ class Message(Base) :
     receiver = relationship("User",foreign_keys=[receiver_id],back_populates="message_receiver")
     room = relationship("Room",back_populates="messages")
     package = relationship("Package",back_populates="messages")
+    package_prices = relationship("PackagePrices",back_populates="messages")
     media = relationship("MediaMessage",back_populates="message")
 
     def __repr__(self) -> str:

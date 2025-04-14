@@ -6,7 +6,6 @@ from fastapi import UploadFile
 from ....models.user_model import User
 # schemas
 from ...schemas.user_schema import UserBase
-from .authProfileModel import UpdateProfileRequest
 # types
 from ....types.user_types  import UserRoleEnum
 # common
@@ -17,21 +16,6 @@ async def getUser(id_user : int,session : AsyncSession) -> UserBase :
     findUser = (await session.execute(select(User).where(and_(User.id == id_user,User.role == UserRoleEnum.USER)))).scalar_one_or_none()
     if not findUser :
         raise HttpException(404,f"user tidak ditemukan")
-
-    return {
-        "msg" : "success",
-        "data" : findUser
-    }
-
-async def updateProfile(id_user : int,profile : UpdateProfileRequest,session : AsyncSession) -> UserBase :
-    findUser = (await session.execute(select(User).where(and_(User.id == id_user,User.role == UserRoleEnum.USER)))).scalar_one_or_none()
-    if not findUser :
-        raise HttpException(404,f"user tidak ditemukan")
-    
-    if profile.model_dump(exclude_none=True,exclude={"foto_profile"}) :
-        updateTable(profile.model_dump(exclude={"foto_profile"}),findUser)
-
-    
 
     return {
         "msg" : "success",
