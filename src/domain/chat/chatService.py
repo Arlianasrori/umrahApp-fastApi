@@ -9,7 +9,7 @@ from ...models.package_model import Package
 
 # schemas
 from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
-from ..schemas.chat_schema import MessageBase, RoomBase, MediaMessageBase
+from ..schemas.chat_schema import MessageBase, RoomBase, MediaMessageBase, MessageWithSenderReceiver
 
 # common
 import aiofiles
@@ -244,8 +244,8 @@ async def getAllRoom(user : dict,query : GetRoomQuery,session : AsyncSession) ->
         "data" : response
     }
 
-async def getMessageInsideRoom(room_id : int,session : AsyncSession) -> list[MessageBase] :
-    findMessage = (await session.execute(select(Message).options(joinedload(Message.package),subqueryload(Message.media)).where(Message.room_id == room_id).order_by(Message.created_at.desc()))).scalars().all()
+async def getMessageInsideRoom(room_id : int,session : AsyncSession) -> list[MessageWithSenderReceiver] :
+    findMessage = (await session.execute(select(Message).options(joinedload(Message.package),subqueryload(Message.media),joinedload(Message.receiver),joinedload(Message.sender)).where(Message.room_id == room_id).order_by(Message.created_at.desc()))).scalars().all()
 
     return {
         "msg" : "success",

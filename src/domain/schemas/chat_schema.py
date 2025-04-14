@@ -18,6 +18,10 @@ class MessageBase(BaseModel) :
     package : PackageBase | None = None
     media : list[MediaMessageBase] | None = None 
 
+class MessageWithSenderReceiver(MessageBase) :
+    receiver : UserBase
+    sender : UserBase
+
 class RoomUserBase(BaseModel) :
     id : int
     deleted : bool

@@ -6,7 +6,7 @@ from ..domain.chat import chatService
 from ..db.sessionDepedency import sessionDepedency
 # schemas
 from ..domain.chat.chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
-from ..domain.schemas.chat_schema import MessageBase,MediaMessageBase
+from ..domain.schemas.chat_schema import MessageBase,MediaMessageBase,MessageWithSenderReceiver
 from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
 # depends
 from ..auth.auth_depends.alluser.depend_auth_alluser import allUserAuth
@@ -27,7 +27,7 @@ async def deleteRoom(room_id : int,user : dict = Depends(getAllUserAuth),session
     return await chatService.deleteRoom(user,room_id,session)
 
 
-@chatRouter.get("/message/{room_id}",response_model=ApiResponse[list[MessageBase]],description="used to start a chat with other users or create a room.",tags=["CHAT/MESSAGE"])
+@chatRouter.get("/message/{room_id}",response_model=ApiResponse[list[MessageWithSenderReceiver]],description="used to start a chat with other users or create a room.",tags=["CHAT/MESSAGE"])
 async def getAllMessageInsideRoom(room_id : int,session : sessionDepedency = None) :
     return await chatService.getMessageInsideRoom(room_id,session)
 

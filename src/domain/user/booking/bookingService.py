@@ -25,7 +25,12 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     findPackagePrice = (await session.execute(select(PackagePrices).options(joinedload(PackagePrices.package)).where(PackagePrices.id == request.packages_price_id))).scalar_one_or_none()
 
     if not findPackagePrice:
-        raise HttpException(status_code=404,detail="Package price not found")
+        raise HttpException(status=404,message="Package price not found")
+    
+    findPackgae = (await session.execute(select(Package).where(Package.id == request.package_id))).scalar_one_or_none()
+
+    if not findPackgae:
+        raise HttpException(status=404,message="Package not found")
     
     findBooking = (await session.execute(select(Booking).where(and_(Booking.user_id == user["id"],Booking.packages_price_id == request.packages_price_id,Booking.status != BookingStatusEnum.CANCELLED)))).scalars().all()
 
@@ -48,7 +53,7 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     print(booking_stats)
     
     if findPackagePrice.seat_count - (booking_stats["count_filled"] + booking_stats["count_booking"]) < request.count:
-        raise HttpException(status_code=400,detail="Seat not available")
+        raise HttpException(status=400,message="Seat not available")
     
     bookingMapping = request.model_dump()   
     bookingMapping.update({"id" : generate_id(),"user_id" : user["id"],"booking_date" : datetime.now(),"total_price" : request.total_price,"status" : BookingStatusEnum.PENDING})
@@ -68,7 +73,7 @@ async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> Bo
     findBooking = (await session.execute(select(Booking).options(joinedload(Booking.package)).where(and_(Booking.id == booking_id,Booking.user_id == user["id"])))).scalar_one_or_none()
 
     if not findBooking:
-        raise HttpException(status_code=404,detail="Booking not found")
+        raise HttpException(status=404,message="Booking not found")
     
     findBooking.status = BookingStatusEnum.CANCELLED.value
     bookingDictCopy = deepcopy(findBooking.__dict__)
@@ -83,6 +88,17 @@ async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> Bo
 
 async def getPackageBooking(user : dict,session:AsyncSession) -> list[BookingWithPackagePrices]:
     findBooking = (await session.execute(select(Booking).options(joinedload(Booking.package),joinedload(Booking.package_price)).where(Booking.user_id == user["id"]))).scalars().all()
+
+    return {
+        "msg" : "success",
+        "data" : findBooking
+    }
+    
+async def getPackageBookingById(booking_id : int, user : dict,session:AsyncSession) -> BookingWithPackagePrices:
+    findBooking = (await session.execute(select(Booking).options(joinedload(Booking.package),joinedload(Booking.package_price)).where(and_(Booking.user_id == user["id"],Booking.id == booking_id)))).scalar_one_or_none()
+    
+    if not findBooking :
+        raise HttpException(404,"booking is not found")
 
     return {
         "msg" : "success",

@@ -71,6 +71,10 @@ async def add_booking(request : AddBookingRequest,user : dict = Depends(getUsetA
 async def get_package_booking(user : dict = Depends(getUsetAuth),session : sessionDepedency = None) :
     return await bookingService.getPackageBooking(user,session)
 
+@userRouter.get("/booking/{booking_id}",response_model=ApiResponse[BookingWithPackagePrices],tags=["USER/BOOKING"])
+async def get_package_booking(booking_id : int,user : dict = Depends(getUsetAuth),session : sessionDepedency = None) :
+    return await bookingService.getPackageBookingById(booking_id,user,session)
+
 @userRouter.put("/booking/{booking_id}",response_model=ApiResponse[BookingBase],tags=["USER/BOOKING"])
 async def cancel_booking(booking_id : int,user : dict = Depends(getUsetAuth),session : sessionDepedency = None) :
     return await bookingService.cancelBooking(user,booking_id,session)

@@ -1,4 +1,4 @@
-from fastapi import Cookie, Request
+from fastapi import Cookie, Request, Header
 from sqlalchemy import and_,or_
 from ....models.user_model import User
 from ....error.errorHandling import HttpException
@@ -11,12 +11,15 @@ from ....types.user_types import UserRoleEnum
 # Secret key for JWT token verification
 SECRET_KEY = os.getenv("USER_SECRET_ACCESS_TOKEN")
 
-async def allUserAuth(access_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
-    if not access_token:
-        raise HttpException(status=401, message="invalid token(unauthorized)")
+async def allUserAuth(access_token: str | None = Cookie(None),Authorization: str | None = Header(default=None, example="jwt access token"), req: Request = None, Session: sessionDepedency = None):
     try:
+        token = None
+        if access_token:
+            token = access_token
+        elif Authorization:
+            token = Authorization.split(" ")[1]
         # Decode and verify JWT token
-        user = jwt.decode(access_token, SECRET_KEY, algorithms="HS256")
+        user = jwt.decode(token, SECRET_KEY, algorithms="HS256")
 
         if not user:
             raise HttpException(status=401, message="invalid token(unauthorized)")
