@@ -68,7 +68,7 @@ async def updatePackage(admin : dict, id_package : int,request : UpdatePackageRe
 
         async with aiofiles.open(file_name_save, "wb") as f:
             await f.write(request.image.file.read())
-            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}"
+            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}" 
 
     packageDictCopy = deepcopy(findPackage.__dict__)
     await session.commit()

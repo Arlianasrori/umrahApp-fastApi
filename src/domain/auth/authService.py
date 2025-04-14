@@ -105,6 +105,8 @@ async def registerWithOauth2(token_google_id : str,platform : PlatformEnum,sessi
     request = requests.Request()
 
     try :
+        print(ANDROID_GOOGLE_CLIENT_ID)
+        print(token_google_id)
         id_info = id_token.verify_oauth2_token(
             token_google_id, request, ANDROID_GOOGLE_CLIENT_ID if platform == PlatformEnum.ANDROID else WEB_GOOGLE_CLIENT_ID)
         
