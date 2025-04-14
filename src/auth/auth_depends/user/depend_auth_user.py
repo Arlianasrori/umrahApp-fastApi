@@ -1,5 +1,5 @@
 from fastapi import Cookie, Request
-from sqlalchemy import and_
+from sqlalchemy import and_,or_
 from ....models.user_model import User
 from ....error.errorHandling import HttpException
 from ....db.sessionDepedency import sessionDepedency
@@ -22,7 +22,7 @@ async def userAuth(access_token: str | None = Cookie(None), req: Request = None,
             raise HttpException(status=401, message="invalid token(unauthorized)")
         
         # Query database for admin user
-        findUser = (await Session.execute(select(User).where(and_(User.id == user["id"],User.role == UserRoleEnum.USER.value)))).scalar_one_or_none()
+        findUser = (await Session.execute(select(User).where(and_(User.id == user["id"],or_(User.role == UserRoleEnum.USER.value, User.role == UserRoleEnum.ADMIN.value))))).scalar_one_or_none()
 
         if not findUser:
             raise HttpException(status=401, message="invalid token(unauthorized)")

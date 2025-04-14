@@ -6,12 +6,13 @@ import datetime
 class RoomUsers(Base):
     __tablename__ = "room_users"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id',ondelete="CASCADE"))
     room_id = Column(Integer, ForeignKey('room.id',ondelete="CASCADE"))
+    deleted = Column(Boolean, default=False) 
 
     room = relationship("Room",back_populates="roomUser")
-    users = relationship("User",back_populates="roomUser")
+    user = relationship("User",back_populates="roomUser")
 
     def __repr__(self):
         return f"<RoomUser(roomId={self.room_id}, userID={self.user_id})>"
@@ -36,6 +37,8 @@ class Message(Base) :
     message = Column(String,nullable=False)
     sender_id = Column(Integer,ForeignKey("user.id"),nullable=False)
     receiver_id = Column(Integer,ForeignKey("user.id"),nullable=False)
+    id_package = Column(Integer,ForeignKey("package.id"),nullable=True)
+    package_prices_id = Column(Integer,ForeignKey("package_prices.id"),nullable=True)
     is_read = Column(Boolean,nullable=False,default=False)
     created_at = Column(DateTime,nullable=False,default=datetime.datetime.utcnow())
     updated_at = Column(DateTime,nullable=False,default=datetime.datetime.utcnow(),onupdate=datetime.datetime.utcnow())
@@ -43,20 +46,22 @@ class Message(Base) :
     sender = relationship("User",foreign_keys=[sender_id],back_populates="message_sender")
     receiver = relationship("User",foreign_keys=[receiver_id],back_populates="message_receiver")
     room = relationship("Room",back_populates="messages")
-    # media = relationship("MediaMessage",back_populates="message")
+    package = relationship("Package",back_populates="messages")
+    package_prices = relationship("PackagePrices",back_populates="messages")
+    media = relationship("MediaMessage",back_populates="message")
 
     def __repr__(self) -> str:
         return f"Chat(id={self.id}, message={self.message}, sender_id={self.sender_id}, receiver_id={self.receiver_id})"
     
-# class MediaMessage(Base):
-#     __tablename__ = "media_message"
+class MediaMessage(Base):
+    __tablename__ = "media_message"
 
-#     id = Column(String, primary_key=True)
-#     type = Column(String)  # Type of media (image, video, etc.)
-#     url = Column(String)
-#     message_id = Column(String, ForeignKey("message.id"))
+    id = Column(Integer, primary_key=True)
+    type = Column(String)  # Type of media (image, video, etc.)
+    url = Column(String)
+    message_id = Column(Integer, ForeignKey("message.id"))
 
-#     message = relationship("Message",back_populates="media")
+    message = relationship("Message",back_populates="media")
 
-#     def __repr__(self) -> str:
-#         return f"media {self.message_id}-{self.type}-{self.url}"
+    def __repr__(self) -> str:
+        return f"media {self.message_id}-{self.type}-{self.url}"

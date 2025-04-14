@@ -17,7 +17,7 @@ async def adminAuth(access_token: str | None = Cookie(None), req: Request = None
     try:
         # Decode and verify JWT token
         admin = jwt.decode(access_token, SECRET_KEY, algorithms="HS256")
-        print(admin)
+        # print(admin)
 
         if not admin:
             raise HttpException(status=401, message="invalid token(unauthorized)")

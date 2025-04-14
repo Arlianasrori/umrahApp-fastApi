@@ -59,6 +59,7 @@ class PackageWithPrices(PackageBase) :
 
 class PackageWithGallery(PackageBase) :
     gallery : list[GalleryPackageBase]
+    user : UserBase | None = None
 
 class PackageWithPricesAndGallery(PackageBase) :
     package_prices : list[PackagePricesBase]

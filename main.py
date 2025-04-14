@@ -22,17 +22,22 @@ from src.routes.authRouter import authRouter
 from src.routes.adminRouter import adminRouter
 from src.routes.userRouter import userRouter
 from src.routes.superAdminRouter import superAdminRouter
+from src.routes.chatRouter import chatRouter
+
+# socket
+from src.socket.socket import socket_app
+from src.socket.socket_connection_handling import handle_socket_connection
 
 # Initialize FastAPI application with configuration
 App = FastAPI(
-    title="API SPEC FOR PRESISI APP",
-    description="This is the API specification for absensi App, it can be your guide in consuming the API. Please pay attention to the required fields in this API specification",
+    title="API SPEC FOR TRAVEL APP",
+    description="This is the API specification for travel App, it can be your guide in consuming the API. Please pay attention to the required fields in this API specification.For the chatting feature with socket, you can refer to the following documentation : {serverUrl}/documentation/chat_socket_documentation.md",
     servers=[{"url": "http://localhost:2008", "description": "development server"}],
-    contact={"name": "Habil Arlian Asrori", "email": "arlianasrori@gmail.com"}
+    contact={"name": "Habil Arlian Asrori", "email": "arlianasrori@gmail.com"},
 )
 
 # Add routers to the application
-routes = [authRouter,superAdminRouter,adminRouter,userRouter]
+routes = [authRouter,superAdminRouter,adminRouter,userRouter,chatRouter]
 for router in routes:
     App.include_router(router)
 
@@ -52,8 +57,17 @@ App.add_middleware(
 # Mount static directory for public files
 App.mount("/public", StaticFiles(directory="src/public"), name="public")
 
+# Mount docs directory for public files
+App.mount("/documentation", StaticFiles(directory="docs"), name="documentation")
+
+# mount socket app
+App.mount("/socket",app=socket_app)
+
 # Add error handling to the application
 add_exception_server(App)
+
+# running handle socket connection
+handle_socket_connection()
 
 # Function to run the server
 async def runServer():

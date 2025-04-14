@@ -31,7 +31,7 @@ async def getAllPackage(query : GetAllPackagesQuery,session:AsyncSession) -> lis
     }
 
 async def getPackageById(id_package : int,session:AsyncSession) -> PackageWithGallery:
-    findPackage = (await session.execute(select(Package).options(subqueryload(Package.gallery)).where(Package.id == id_package))).scalar_one_or_none()
+    findPackage = (await session.execute(select(Package).options(subqueryload(Package.gallery),joinedload(Package.user)).where(Package.id == id_package))).scalar_one_or_none()
 
     if not findPackage :
         raise HttpException(404,f"package not found")

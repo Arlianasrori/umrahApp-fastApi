@@ -21,6 +21,7 @@ class Package(Base):
     booking = relationship("Booking", back_populates="package")
     rating = relationship("Rating", back_populates="package")
     gallery = relationship("GalleryPackage", back_populates="package")
+    messages = relationship("Message",back_populates="package")
 
     def __repr__(self):
         return f"<Package(id={self.id}, name={self.name})>"
@@ -48,6 +49,7 @@ class PackagePrices(Base) :
 
     package = relationship("Package", back_populates="package_prices")
     booking = relationship("Booking", back_populates="package_price")
+    messages = relationship("Message",back_populates="package_prices")
 
     def __repr__(self):
         return f"<PackagePrices(id={self.id}, type={self.package_type} roomType={self.room_type})>"

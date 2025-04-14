@@ -68,11 +68,11 @@ async def updatePackage(admin : dict, id_package : int,request : UpdatePackageRe
 
         async with aiofiles.open(file_name_save, "wb") as f:
             await f.write(request.image.file.read())
-            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}"
+            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}" 
 
     packageDictCopy = deepcopy(findPackage.__dict__)
     await session.commit()
-    if request.image :
+    if findPackage.image :
         remoove_image_process = Process(target=os.remove, args=(f"{IMAGE_PACKAGE_STORE}{file_name_before}",))
         remoove_image_process.start()
 
@@ -95,7 +95,7 @@ async def deletePackage(admin: dict, id_package : int,session:AsyncSession) -> P
     }
 
 async def getAllPackage(admin : dict,query : GetAllPackagesQuery,session:AsyncSession) -> list[PackageBase] | ResponsePaketPag:
-    statementSelectPackage = select(Package).where(and_(Package.add_by_admin == admin["id"],Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True))
+    statementSelectPackage = select(Package).where(and_(Package.add_by_admin == admin["id"],Package.departure_date >= query.start_date if query.start_date else True,Package.departure_date <= query.end_date if query.end_date else True,Package.name.like(f"%{query.name}%") if query.name else True))
 
     if query.page :
         findPackage = (await session.execute(statementSelectPackage.limit(10).offset(10 * (query.page - 1)))).scalars().all()
