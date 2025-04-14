@@ -36,7 +36,7 @@ async def get_user(user : dict = Depends(getUserAuth),session : sessionDepedency
     return await authProfileService.getUser(user["id"],session)
 
 @userRouter.put("/profile",response_model=ApiResponse[UserBase],tags=["USER/AUTH-PROFILE"])
-async def get_user(profile : UpdateProfileRequest,user : dict = Depends(getUsetAuth),session : sessionDepedency = None) :
+async def get_user(profile : UpdateProfileRequest,user : dict = Depends(getUserAuth),session : sessionDepedency = None) :
     return await authProfileService.updateProfile(user["id"],profile,session)
 # package
 @userRouter.get("/package",response_model=ApiResponse[list[GetAllPackagesResponse]],tags=["USER/PACKAGE"])

@@ -1,5 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy import desc, select,and_,not_
+from sqlalchemy.orm import subqueryload
 
 # models
 from ...models.notification_model import Notification
@@ -16,20 +18,14 @@ from ...db.db import SessionLocal
 from collections import defaultdict
 from datetime import date
 from ...utils.generateId_util import generate_id
-
-# FCM
-import firebase_admin
-from firebase_admin import credentials, messaging
 import os
 import asyncio
 from multiprocessing import Process
 from copy import deepcopy
-from ...socket.socket_connection_handling import sio,getUserSid
 
-from copy import deepcopy
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import desc, select,and_,not_
-from sqlalchemy.orm import subqueryload
+# FCM
+import firebase_admin
+from firebase_admin import credentials, messaging
 
 
 # Inisialisasi SDK dengan file kunci layanan Anda
@@ -52,13 +48,10 @@ async def addNotification(data : AddNotificationRequest) -> None:
             await session.commit()
             await session.reset()
 
-            user_sid = await getUserSid(data.user_id)
-            if user_sid :
-                await sio.emit("new_notification",data.model_dump(),user_sid)
-
             # send notificatio to user using firebase cloud messaging
             if userDictCopy["fcm_token"] and id :
-                await kirim_pesan_fcm(userDictCopy["fcm_token"], data.title, data.body,userDictCopy["id"],data.id)
+                await kirim_pesan_fcm(userDictCopy["fcm_token"], data.title, data.body,userDictCopy["id"],data.id,FCMType.notification)
+
         except Exception as e:
             print(f"Terjadi kesalahan: pada notificationService.py {e}")
         finally :
@@ -72,7 +65,7 @@ async def resetTokenFCM(id_user : int,session : AsyncSession):
         findUser.fcm_token = None
         await session.commit()
 
-async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int,notification_id : int):
+async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int,id_type : int,type : FCMType):
     try:
         session = SessionLocal()
         if token_FCM :
@@ -82,8 +75,8 @@ async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int
                     body=body
                 ),
                 data={
-                    "id" : notification_id,
-                    "type" : FCMType.notification
+                    "id" : id_type,
+                    "type" : type.value
                 },
                 token=token_FCM,
             )

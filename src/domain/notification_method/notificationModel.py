@@ -10,4 +10,4 @@ class AddNotificationRequest(BaseModel):
 
 class FCMType(Enum) :
     notification = "notification"
-    chat = "chat"
+    chat_room = "chat_room"

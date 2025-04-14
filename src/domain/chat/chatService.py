@@ -9,7 +9,11 @@ from ...models.package_model import Package,PackagePrices
 
 # schemas
 from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
-from ..schemas.chat_schema import MessageBase, RoomBase, MediaMessageBase
+from ..schemas.chat_schema import MessageBase,MediaMessageBase
+from ..notification_method.notificationModel import FCMType
+
+# service
+from ..notification_method.notificationService import kirim_pesan_fcm
 
 # common
 import aiofiles
@@ -22,9 +26,9 @@ from ...socket.socket_connection_handling import sio,getUserSid
 
 
 async def startChat(user : dict,message : AddMessageRequest,session : AsyncSession) -> MessageBase :
-    findUser = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
+    findReceiver = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
 
-    if not findUser :
+    if not findReceiver :
         raise HttpException(404,"user not found")
     
     if message.package_id :
@@ -80,15 +84,18 @@ async def startChat(user : dict,message : AddMessageRequest,session : AsyncSessi
 
         # roomForResponse = deepcopy(findRoom[0].__dict__)
     
-    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"package_prices_id" : message.package_prices_id, "is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
+    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"package_prices_id" : message.package_prices_id, "is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow()}
     session.add(Message(**messageMapping))
     await session.commit()
-    await session.refresh(findUser)
+    await session.refresh(findReceiver)
+
+    # send push notification to user
+    await kirim_pesan_fcm(token_FCM=findReceiver.fcm_token,title=findReceiver.name,body=message.message,id_user=findReceiver.id,id_type=room_id,type=FCMType.chat_room)
 
     # send new room to socket client
-    user_sid = await getUserSid(findUser.id)
+    user_sid = await getUserSid(findReceiver.id)
     if user_sid :
-        await sio.emit("start_chat",{"room_id" : room_id,"to_user_name" : findUser.name,"to_user_id" : findUser.name,"last_message" : message.message,"last_message_time" : messageMapping["created_at"],"count_not_read_message" : 1},user_sid) 
+        await sio.emit("start_chat",{"room_id" : room_id,"to_user_name" : findReceiver.name,"to_user_id" : findReceiver.name,"last_message" : message.message,"last_message_time" : messageMapping["created_at"],"count_not_read_message" : 1},user_sid) 
 
     return {
         "msg" : "success",
@@ -101,9 +108,9 @@ async def newMessage(user : dict,room_id : int,message : AddMessageRequest,sessi
     if not findRoom :
         raise HttpException(404,"room is not found")
     
-    findUser = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
+    findReceiver = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
 
-    if not findUser :
+    if not findReceiver :
         raise HttpException(404,"user not found")
     
     if message.package_prices_id :
@@ -135,6 +142,10 @@ async def newMessage(user : dict,room_id : int,message : AddMessageRequest,sessi
     messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
     session.add(Message(**messageMapping))
     await session.commit()
+    await session.refresh(findReceiver)
+
+    # send push notification to user
+    await kirim_pesan_fcm(token_FCM=findReceiver.fcm_token,title=findReceiver.name,body=message.message,id_user=findReceiver.id,id_type=room_id,type=FCMType.chat_room)
 
     # send new message to socket client
     user_sid = await getUserSid(messageMapping["receiver_id"])
