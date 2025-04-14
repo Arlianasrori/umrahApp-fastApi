@@ -9,7 +9,7 @@ import os
 from ....types.user_types import UserRoleEnum
 
 # Secret key for JWT token verification
-SECRET_KEY = os.getenv("ADMIN_SECRET_ACCESS_TOKEN")
+SECRET_KEY = os.getenv("USER_SECRET_ACCESS_TOKEN")
 
 async def adminAuth(access_token: str | None = Cookie(None), req: Request = None, Session: sessionDepedency = None):
     if not access_token:
