@@ -1,20 +1,16 @@
 from pydantic import BaseModel
 from datetime import datetime, date
 
-class NotificationReadModelBase(BaseModel):
+class NotificationReadBase(BaseModel):
     id : int
     is_read : bool
 
-class NotificationModelBase(BaseModel):
+class NotificationBase(BaseModel):
     id: int
     title: str
     body: str
     created_at: datetime
-    reads : list[NotificationReadModelBase] = []
-
-# class ResponseGetAllNotification(BaseModel):
-#     msg : str
-#     data : dict[date,list[NotificationModelBase]]
+    reads : list[NotificationReadBase] = []
 
 class ResponseGetUnreadNotification(BaseModel):
     count : int

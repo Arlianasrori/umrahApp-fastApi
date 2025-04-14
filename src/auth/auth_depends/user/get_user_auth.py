@@ -1,4 +1,4 @@
 from fastapi import Request
 
-async def getUsetAuth(req : Request) :
+async def getUserAuth(req : Request) :
     return req.User

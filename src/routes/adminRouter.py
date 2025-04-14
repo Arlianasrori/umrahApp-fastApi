@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile
+from datetime import date
 # auth_profile
 from ..domain.admin.auth_profile import authProfileService 
 
@@ -12,10 +13,14 @@ from ..domain.admin.booking import bookingService
 from ..domain.admin.booking.bookingSchema import GetPackageContainsBookingResponsePag,GetPackageContainsBooking,GetAllPackagesQuery as GetAllPackagesBookingQuery,UpdateBookingStatusRequest
 from ..domain.schemas.package_schema import PackageWithBooking, BookingWithUserPrice
 
+# notification
+from ..domain.notification_method import notificationService
+from ..domain.schemas.notification_schema import NotificationBase,ResponseGetUnreadNotification
+
 # db
 from ..db.sessionDepedency import sessionDepedency
 # schemas
-from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
+from ..domain.schemas.response_schema import ApiResponse
 from ..domain.schemas.user_schema import UserBase
 # depends
 from ..auth.auth_depends.admin.depend_auth_admin import adminAuth
@@ -89,3 +94,20 @@ async def update_booking_status(id_booking : int,request : UpdateBookingStatusRe
 @adminRouter.get("/package/rating/{id_package}",response_model=ApiResponse[GetPackageRatingResponse],tags=["ADMIN/RATING"])
 async def get_all_package_contains_booking(id_package : int,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
     return await paketService.getPackageRating(admin,id_package,session)
+
+# notification
+@adminRouter.get("/notification",response_model=ApiResponse[dict[date,list[NotificationBase]]],tags=["ADMIN/NOTIFICATION"])
+async def getAllNotification(user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getAllNotification(user["id"],session)
+
+@adminRouter.get("/notification/{id_notification}",response_model=ApiResponse[NotificationBase],tags=["ADMIN/NOTIFICATION"])
+async def getNotificationById(id_notification : int,user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getNotificationById(id_notification,user["id"],session)
+
+@adminRouter.post("/notification/read/{id_notification}",response_model=ApiResponse[NotificationBase],tags=["ADMIN/NOTIFICATION"])
+async def readNotification(id_notification : int,user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.readNotification(id_notification,user["id"],session)
+
+@adminRouter.get("/notification/unread/count",response_model=ApiResponse[ResponseGetUnreadNotification],tags=["ADMIN/NOTIFICATION"])
+async def getUnreadNotification(user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getCountNotification(user["id"],session)
