@@ -3,12 +3,19 @@ from sqlalchemy import select
 
 # models
 from ...models.notification_model import Notification
-from .notificationModel import AddNotificationModel
+from .notificationModel import AddNotificationRequest, FCMType
 from ...models.user_model import User
+from ...models.notification_model import Notification,NotificationRead
+
+# schemas
+from ..schemas.notification_schema import NotificationBase,ResponseGetUnreadNotification
 
 # common
 from ...error.errorHandling import HttpException
 from ...db.db import SessionLocal
+from collections import defaultdict
+from datetime import date
+from ...utils.generateId_util import generate_id
 
 # FCM
 import firebase_admin
@@ -17,16 +24,21 @@ import os
 import asyncio
 from multiprocessing import Process
 from copy import deepcopy
-from ...socket.socket_connection_handling import sio,getUserSid
+
+from copy import deepcopy
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import desc, select,and_,not_
+from sqlalchemy.orm import subqueryload
+
 
 # Inisialisasi SDK dengan file kunci layanan Anda
 cred = credentials.Certificate(f"{os.getcwd()}/{os.getenv("FCM_PATH_KEY")}")
 firebase_admin.initialize_app(cred)
 
-async def addNotification(data : AddNotificationModel) -> None:
+async def addNotification(data : AddNotificationRequest) -> None:
     async with SessionLocal() as session :
         try :
-            data = AddNotificationModel(**data)
+            data = AddNotificationRequest(**data)
 
             findUser = (await session.execute(select(User).where(User.id == data.user_id))).scalar_one_or_none()
 
@@ -39,13 +51,9 @@ async def addNotification(data : AddNotificationModel) -> None:
             await session.commit()
             await session.reset()
 
-            user_sid = await getUserSid(data.user_id)
-            if user_sid :
-                await sio.emit("new_notification",data.model_dump(),user_sid)
-
             # send notificatio to user using firebase cloud messaging
             if userDictCopy["fcm_token"] and id :
-                await kirim_pesan_fcm(userDictCopy["fcm_token"], data.title, data.body,userDictCopy["id"])
+                await kirim_pesan_fcm(userDictCopy["fcm_token"], data.title, data.body,userDictCopy["id"],data.id)
         except Exception as e:
             print(f"Terjadi kesalahan: pada notificationService.py {e}")
         finally :
@@ -59,7 +67,7 @@ async def resetTokenFCM(id_user : int,session : AsyncSession):
         findUser.fcm_token = None
         await session.commit()
 
-async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int):
+async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int,notification_id : int):
     try:
         session = SessionLocal()
         if token_FCM :
@@ -68,6 +76,10 @@ async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int
                     title=title,
                     body=body
                 ),
+                data={
+                    "id" : notification_id,
+                    "type" : FCMType.notification
+                },
                 token=token_FCM,
             )
             response = messaging.send(pesan)
@@ -80,11 +92,14 @@ async def kirim_pesan_fcm(token_FCM : str, title : str, body : str,id_user : int
     finally :
         await session.close()
 
-# using for send notif using multiprocessing
-def sendNotificationProccesSync(body : AddNotificationModel) :
+# using for send notif async
+def sendNotificationAsync(body : AddNotificationRequest) :
     asyncio.run(addNotification(body))
 
 # using send notification  with diffrent thread
-def sendNotificationThreadProccess(body : AddNotificationModel) :
-    process = Process(target=sendNotificationProccesSync,args=(body,))
+def sendNotificationThreadProccess(body : AddNotificationRequest) :
+    process = Process(target=sendNotificationAsync,args=(body,))
     process.start()
+
+
+# get notification
