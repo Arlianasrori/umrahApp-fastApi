@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey,DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey,DateTime, Enum
 from sqlalchemy.orm import relationship
 from ..db.db import Base
 from datetime import datetime
-
+from ..types.notification_types import NotificationDataEnum
 
 class Notification(Base):
     __tablename__ = 'notification'
@@ -15,6 +15,7 @@ class Notification(Base):
 
     user = relationship("User", back_populates="notifications")
     reads = relationship("NotificationRead", back_populates="notification")
+    data = relationship("NotificationData",backref="notification",uselist=False)
 
     def __repr__(self):
         return f"<Notification(id={self.id}, title={self.title})>"
@@ -32,3 +33,10 @@ class NotificationRead(Base):
 
     def __repr__(self):
         return f"<NotificationRead(id={self.id})>"
+
+class NotificationData(Base) :
+    __tablename__ = "notification_data"
+    id = Column(Integer, primary_key=True)
+    notification_id = Column(Integer, ForeignKey('notification.id'), nullable=False)
+    data_id = Column(Integer,nullable=False)
+    data_type = Column(Enum(NotificationDataEnum),nullable=False)

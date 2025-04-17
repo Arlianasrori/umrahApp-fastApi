@@ -45,15 +45,17 @@ async def updateProfile(id_user : int,profile : UpdateProfileRequest,session : A
 
         file_name = f"{generate_id()}-{profile.foto_profile.split(' ')[0]}.{ext_file[-1]}"
         file_name_save = f"{FOTO_PROFILE_STORE}{file_name}"
-        file_name_before = findUser.foto_profile.split("/")[-1]
+        file_name_before = None
+        if findUser.foto_profile :
+            file_name_before = deepcopy(findUser.foto_profile.split("/")[-1])
 
         async with aiofiles.open(file_name_save, "wb") as f:
             await f.write(profile.foto_profile.file.read())
             findUser.foto_profile = f"{FOTO_PROFILE_BASE_URL}/{file_name}"
-    
-    if findUser.foto_profile :
-        remove_image_process = Process(target=os.remove, args=(f"{FOTO_PROFILE_STORE}{file_name_before}",))
-        remove_image_process.start()
+
+            if file_name_before :
+                remove_image_process = Process(target=os.remove, args=(f"{FOTO_PROFILE_STORE}{file_name_before}",))
+                remove_image_process.start()
 
     userDictCopy = deepcopy(findUser.__dict__)
     await session.commit()

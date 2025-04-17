@@ -13,6 +13,7 @@ from ...notification_method.notificationService import sendNotificationThreadPro
 
 # types
 from ....types.package_types import BookingStatusEnum
+from ....types.notification_types import NotificationDataEnum
 
 # common
 import math
@@ -79,7 +80,7 @@ async def updateBookingStatus(admin : dict, id_booking : int,request : UpdateBoo
     bookingDictCopy = deepcopy(findBooking.__dict__)
     await session.commit()
 
-    sendNotificationThreadProccess({"user_id" : bookingDictCopy["user_id"],"title" : "Admin Telah Mengupdate Booking Status Anda","body" : f"Admin Telah Mengupdate Booking Status Anda Dengan {bookingDictCopy["status"]}"})
+    sendNotificationThreadProccess({"user_id" : bookingDictCopy["user_id"],"title" : "Admin Telah Mengupdate Booking Status Anda","body" : f"Admin Telah Mengupdate Booking Status Anda Dengan {bookingDictCopy["status"]}","data_id" : bookingDictCopy["package_id"],"data_type" : NotificationDataEnum.package})
 
     return {
         "msg" : "success",

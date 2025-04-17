@@ -8,9 +8,9 @@ class UpdateProfileRequest(BaseModel) :
     @classmethod
     def as_form(
             cls,
-            name: str = Form(None),
-            fcm_token: str = Form(None),
-            foto_profile: UploadFile = File(None), 
+            name: str | None = Form(None),
+            fcm_token: str | None = Form(None),
+            foto_profile: UploadFile | None = File(None), 
         ):
             return cls(
                 name=name,

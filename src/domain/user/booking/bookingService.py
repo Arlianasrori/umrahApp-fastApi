@@ -11,6 +11,7 @@ from ...schemas.package_schema import BookingBase, PackageWithPrices, BookingWit
 
 # type
 from ....models.package_model import BookingStatusEnum
+from ....types.notification_types import NotificationDataEnum
 
 # service
 from ...notification_method.notificationService import sendNotificationThreadProccess
@@ -57,9 +58,9 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     session.add(Booking(**bookingMapping))
     await session.commit()
     
-    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil!","body" : f"Booking berhasil, silahkan melakukan pembayaran"})
+    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil!","body" : f"Booking berhasil, silahkan melakukan pembayaran","data_id" : packageDictCopy["id"],"data_type" : NotificationDataEnum.package })
 
-    sendNotificationThreadProccess({"user_id" : packageDictCopy["add_by_admin"],"title" : f"{user["name"]} membooking package {packageDictCopy["name"]}","body" : f"{user["name"]} membooking package {packageDictCopy["name"]}, silahkan melanjutkan chat dengan {user['name']} untuk melakukan pembayaran"})
+    sendNotificationThreadProccess({"user_id" : packageDictCopy["add_by_admin"],"title" : f"{user["name"]} membooking package {packageDictCopy["name"]}","body" : f"{user["name"]} membooking package {packageDictCopy["name"]}, silahkan melanjutkan chat dengan {user['name']} untuk melakukan pembayaran","data_id" : packageDictCopy["id"],"data_type" : NotificationDataEnum.package})
 
     return {
         "msg" : "success",
@@ -76,9 +77,9 @@ async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> Bo
     bookingDictCopy = deepcopy(findBooking.__dict__)
     await session.commit()
 
-    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil Dibatalkan","body" : f"Booking berhasil Dibatalkan"})
+    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil Dibatalkan","body" : f"Booking berhasil Dibatalkan","data_id" : bookingDictCopy["package"].id,"data_type" : NotificationDataEnum.package})
 
-    sendNotificationThreadProccess({"user_id" : bookingDictCopy["package"].add_by_admin,"title" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}","body" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}"})
+    sendNotificationThreadProccess({"user_id" : bookingDictCopy["package"].add_by_admin,"title" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}","body" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}","data_id" : bookingDictCopy["package"].id,"data_type" : NotificationDataEnum.package})
 
 
     return {
