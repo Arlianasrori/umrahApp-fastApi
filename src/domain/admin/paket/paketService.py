@@ -68,11 +68,11 @@ async def updatePackage(admin : dict, id_package : int,request : UpdatePackageRe
 
         async with aiofiles.open(file_name_save, "wb") as f:
             await f.write(request.image.file.read())
-            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}"
+            findPackage.image = f"{IMAGE_PACKAGE_BASE_URL}/{file_name}" 
 
     packageDictCopy = deepcopy(findPackage.__dict__)
     await session.commit()
-    if request.image :
+    if findPackage.image :
         remoove_image_process = Process(target=os.remove, args=(f"{IMAGE_PACKAGE_STORE}{file_name_before}",))
         remoove_image_process.start()
 

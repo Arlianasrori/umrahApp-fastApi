@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from ..schemas.package_schema import PackageBase
+from ..schemas.package_schema import PackageBase, PackagePricesBase
 from ..schemas.user_schema import UserBase
 
 class MediaMessageBase(BaseModel) :
@@ -18,9 +18,13 @@ class MessageBase(BaseModel) :
     package : PackageBase | None = None
     media : list[MediaMessageBase] | None = None 
 
+# class MessageWithPackagePrices(MessageBase) :
+#     package_prices : PackagePricesBase
+
 class MessageWithSenderReceiver(MessageBase) :
     receiver : UserBase
     sender : UserBase
+    package_prices : PackagePricesBase | None = None
 
 class RoomUserBase(BaseModel) :
     id : int

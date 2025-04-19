@@ -62,7 +62,9 @@ async def addBooking(user : dict, request : AddBookingRequest,session:AsyncSessi
     session.add(Booking(**bookingMapping))
     await session.commit()
     
-    sendNotificationThreadProccess({"user_id" : packageDictCopy["add_by_admin"],"title" : "Booking Berhasil!","body" : f"Booking berhasil, silahkan melakukan pembayaran"})
+    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil!","body" : f"Booking berhasil, silahkan melakukan pembayaran"})
+
+    sendNotificationThreadProccess({"user_id" : packageDictCopy["add_by_admin"],"title" : f"{user["name"]} membooking package {packageDictCopy["name"]}","body" : f"{user["name"]} membooking package {packageDictCopy["name"]}, silahkan melanjutkan chat dengan {user['name']} untuk melakukan pembayaran"})
 
     return {
         "msg" : "success",
@@ -79,7 +81,10 @@ async def cancelBooking(user : dict,booking_id : str,session:AsyncSession) -> Bo
     bookingDictCopy = deepcopy(findBooking.__dict__)
     await session.commit()
 
-    sendNotificationThreadProccess({"user_id" : bookingDictCopy["package"].add_by_admin,"title" : "Booking Berhasil Dibatalkan","body" : f"Booking berhasil Dibatalkan"})
+    sendNotificationThreadProccess({"user_id" : user["id"],"title" : "Booking Berhasil Dibatalkan","body" : f"Booking berhasil Dibatalkan"})
+
+    sendNotificationThreadProccess({"user_id" : bookingDictCopy["package"].add_by_admin,"title" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}","body" : f"{user["name"]} membatalkan booking untuk package {bookingDictCopy['package'].name}"})
+
 
     return {
         "msg" : "success",

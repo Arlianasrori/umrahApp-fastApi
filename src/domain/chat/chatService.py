@@ -5,11 +5,15 @@ from sqlalchemy.orm import joinedload, subqueryload, selectinload
 # models
 from ...models.user_model import User
 from ...models.chat_model import RoomUsers,Room,Message,MediaMessage
-from ...models.package_model import Package
+from ...models.package_model import Package,PackagePrices
 
 # schemas
 from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
-from ..schemas.chat_schema import MessageBase, RoomBase, MediaMessageBase, MessageWithSenderReceiver
+from ..schemas.chat_schema import MessageBase, MediaMessageBase, MessageWithSenderReceiver
+from ..notification_method.notificationModel import FCMType
+
+# service
+from ..notification_method.notificationService import kirim_pesan_fcm
 
 # common
 import aiofiles
@@ -22,20 +26,22 @@ from ...socket.socket_connection_handling import sio,getUserSid
 
 
 async def startChat(user : dict,message : AddMessageRequest,session : AsyncSession) -> MessageBase :
-    findUser = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
+    findReceiver = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
 
-    if not findUser :
+    if not findReceiver :
         raise HttpException(404,"user not found")
     
-    packageDictCopy = None
     if message.package_id :
         findPackage = (await session.execute(select(Package).where(Package.id == message.package_id))).scalar_one_or_none()
 
         if findPackage is None :
             raise HttpException(404,"package is not found")
-        
-        packageDictCopy = deepcopy(findPackage.__dict__)
-        packageDictCopy.pop("_sa_instance_state")
+    
+    if message.package_prices_id :
+        findPackagePrice = (await session.execute(select(PackagePrices).where(PackagePrices.id == message.package_prices_id))).scalar_one_or_none()
+
+        if findPackagePrice is None :
+            raise HttpException(404,"package price is not found")
 
     
     findRoom = (await session.execute(select(Room).options(subqueryload(Room.roomUser)).where(Room.roomUser.any(or_(RoomUsers.user_id == user["id"],RoomUsers.user_id == message.receiver_id))))).scalars().all()
@@ -78,15 +84,18 @@ async def startChat(user : dict,message : AddMessageRequest,session : AsyncSessi
 
         # roomForResponse = deepcopy(findRoom[0].__dict__)
     
-    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
+    messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"package_prices_id" : message.package_prices_id, "is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow()}
     session.add(Message(**messageMapping))
     await session.commit()
-    await session.refresh(findUser)
+    await session.refresh(findReceiver)
+
+    # send push notification to user
+    await kirim_pesan_fcm(token_FCM=findReceiver.fcm_token,title=findReceiver.name,body=message.message,id_user=findReceiver.id,id_type=room_id,type=FCMType.chat_room)
 
     # send new room to socket client
-    user_sid = await getUserSid(findUser.id)
+    user_sid = await getUserSid(findReceiver.id)
     if user_sid :
-        await sio.emit("start_chat",{"room_id" : room_id,"to_user_name" : findUser.name,"to_user_id" : findUser.name,"last_message" : message.message,"last_message_time" : messageMapping["created_at"],"count_not_read_message" : 1,"package" : packageDictCopy},user_sid) 
+        await sio.emit("start_chat",{"room_id" : room_id,"to_user_name" : findReceiver.name,"to_user_id" : findReceiver.name,"last_message" : message.message,"last_message_time" : messageMapping["created_at"].strftime("%Y-%m-%d %H:%M:%S"),"count_not_read_message" : 1},user_sid) 
 
     return {
         "msg" : "success",
@@ -99,6 +108,17 @@ async def newMessage(user : dict,room_id : int,message : AddMessageRequest,sessi
     if not findRoom :
         raise HttpException(404,"room is not found")
     
+    findReceiver = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
+
+    if not findReceiver :
+        raise HttpException(404,"user not found")
+    
+    if message.package_prices_id :
+        findPackagePrice = (await session.execute(select(PackagePrices).where(PackagePrices.id == message.package_prices_id))).scalar_one_or_none()
+
+        if findPackagePrice is None :
+            raise HttpException(404,"package price is not found")
+    
     packageDictCopy = None
     if message.package_id :
         findPackage = (await session.execute(select(Package).where(Package.id == message.package_id))).scalar_one_or_none()
@@ -109,14 +129,28 @@ async def newMessage(user : dict,room_id : int,message : AddMessageRequest,sessi
         packageDictCopy = deepcopy(findPackage.__dict__)
         packageDictCopy.pop("_sa_instance_state")
     
+    packagePriceDictCopy = None
+    if message.package_prices_id :
+        findPackagePrice = (await session.execute(select(PackagePrices).where(PackagePrices.id == message.package_prices_id))).scalar_one_or_none()
+
+        if findPackagePrice is None :
+            raise HttpException(404,"package price is not found")
+
+        packagePriceDictCopy = deepcopy(findPackagePrice.__dict__)
+        packagePriceDictCopy.pop("_sa_instance_state")
+    
     messageMapping = {"id" : generate_id(),"room_id" : room_id,"message" : message.message,"sender_id" : user["id"],"receiver_id" : message.receiver_id,"id_package" : message.package_id,"is_read" : False,"created_at" : datetime.utcnow() ,"updated_at" : datetime.utcnow() }
     session.add(Message(**messageMapping))
     await session.commit()
+    await session.refresh(findReceiver)
+
+    # send push notification to user
+    await kirim_pesan_fcm(token_FCM=findReceiver.fcm_token,title=findReceiver.name,body=message.message,id_user=findReceiver.id,id_type=room_id,type=FCMType.chat_room)
 
     # send new message to socket client
     user_sid = await getUserSid(messageMapping["receiver_id"])
     if user_sid :
-        await sio.emit("new_message",{**messageMapping,"package" : packageDictCopy})
+        await sio.emit("new_message",{**messageMapping,"created_at" : messageMapping["created_at"].strftime("%Y-%m-%d %H:%M:%S"),"updated_at" : messageMapping["updated_at"].strftime("%Y-%m-%d %H:%M:%S"),"package" : {**packageDictCopy,"departure_date" : packageDictCopy["departure_date"].strftime("%Y-%m-%d")} if packagePriceDictCopy else None,"package_price" : {**packagePriceDictCopy,"package_type" : packagePriceDictCopy["package_type"].value,"room_type" : packagePriceDictCopy["room_type"].value} if packagePriceDictCopy else None})
 
     return {
         "msg" : "success",
@@ -142,7 +176,7 @@ async def updateMessage(user : dict,message_id : int,message : UpdateMessageRequ
     # update message to socket client
     user_sid = await getUserSid(messageDictCopy["receiver_id"])
     if user_sid :
-        await sio.emit("update_message",messageDictCopy)
+        await sio.emit("update_message",{**messageDictCopy,"created_at" : messageDictCopy["created_at"].strftime("%Y-%m-%d %H:%M:%S"),"updated_at" : messageDictCopy["updated_at"].strftime("%Y-%m-%d %H:%M:%S")})
 
     return {
         "msg" : "success",
@@ -166,7 +200,7 @@ async def deleteMessage(user : dict,message_id : int,session : AsyncSession) -> 
     # update message to socket client
     user_sid = await getUserSid(messageDictCopy["receiver_id"])
     if user_sid :
-        await sio.emit("delete_message",messageDictCopy)
+        await sio.emit("delete_message",{**messageDictCopy,"created_at" : messageDictCopy["created_at"].strftime("%Y-%m-%d %H:%M:%S"),"updated_at" : messageDictCopy["updated_at"].strftime("%Y-%m-%d %H:%M:%S")})
 
     return {
         "msg" : "success",
@@ -245,7 +279,7 @@ async def getAllRoom(user : dict,query : GetRoomQuery,session : AsyncSession) ->
     }
 
 async def getMessageInsideRoom(room_id : int,session : AsyncSession) -> list[MessageWithSenderReceiver] :
-    findMessage = (await session.execute(select(Message).options(joinedload(Message.package),subqueryload(Message.media),joinedload(Message.receiver),joinedload(Message.sender)).where(Message.room_id == room_id).order_by(Message.created_at.desc()))).scalars().all()
+    findMessage = (await session.execute(select(Message).options(joinedload(Message.package),joinedload(Message.package_prices),subqueryload(Message.media),joinedload(Message.receiver),joinedload(Message.sender)).where(Message.room_id == room_id).order_by(Message.created_at.desc()))).scalars().all()
 
     return {
         "msg" : "success",
