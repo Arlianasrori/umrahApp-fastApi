@@ -11,13 +11,15 @@ async def socket_auth_middleware(auth):
         if not auth or type(auth) != dict:
             return False
         
-        auth_header = auth['access_token']
+        auth_header = auth.get('access_token')
         if not auth_header:
             return False
+
+        if type(auth_header) == str :
+            token = auth_header
+        else :
+            scheme, _, token = auth_header.partition(' ')
         
-        print(f"ini auth token {auth_header}")
-        
-        scheme, _, token = auth_header.partition(' ')
         
         if not token:
             return False
