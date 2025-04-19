@@ -57,11 +57,12 @@ App.add_middleware(
 # Mount static directory for public files
 App.mount("/public", StaticFiles(directory="src/public"), name="public")
 
+
 # Mount docs directory for public files
 App.mount("/documentation", StaticFiles(directory="docs"), name="documentation")
 
 # mount socket app
-App.mount("/socket",app=socket_app)
+App.mount("/",app=socket_app)
 
 # Add error handling to the application
 add_exception_server(App)

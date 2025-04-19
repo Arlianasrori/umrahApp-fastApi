@@ -8,12 +8,13 @@ from ...models.chat_model import RoomUsers,Room,Message,MediaMessage
 from ...models.package_model import Package,PackagePrices
 
 # schemas
-from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
+from .chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse, AddAutoReplyChatRequest
 from ..schemas.chat_schema import MessageBase,MediaMessageBase
 from ..notification_method.notificationModel import FCMType
 
 # service
 from ..notification_method.notificationService import kirim_pesan_fcm
+from .chatUtils import check_auto_reply, check_exisitng_room, create_room
 
 # common
 import aiofiles
@@ -24,6 +25,16 @@ from datetime import datetime
 import os
 from ...socket.socket_connection_handling import sio,getUserSid
 
+async def start_auto_reply_message(user : dict,message : AddAutoReplyChatRequest) -> MessageBase:
+    response = await check_auto_reply(user["id"],message.message,None,None)
+
+    if response is None :
+        raise HttpException(404,"The message given is not in the list of messages to be replied to")
+
+    return {
+        "msg" : "success",
+        "data" : response
+    }
 
 async def startChat(user : dict,message : AddMessageRequest,session : AsyncSession) -> MessageBase :
     findReceiver = (await session.execute(select(User).where(User.id == message.receiver_id))).scalar_one_or_none()
@@ -47,32 +58,32 @@ async def startChat(user : dict,message : AddMessageRequest,session : AsyncSessi
     findRoom = (await session.execute(select(Room).options(subqueryload(Room.roomUser)).where(Room.roomUser.any(or_(RoomUsers.user_id == user["id"],RoomUsers.user_id == message.receiver_id))))).scalars().all()
 
     # mencari room yang berisi user dengan user id == id pengirim dan user id == id penerima
-    roomExist = None
-    for room in findRoom :
-        if len(room.roomUser) == 2 :
-            isSameRoom=False
-            for roomUser in room.roomUser :
-                if roomUser.user_id == user["id"] or roomUser.user_id == message.receiver_id :
-                    isSameRoom = True
-                else :
-                    isSameRoom=False
-                    break
-            if isSameRoom :
-                roomExist = room
-                break
-            
+    roomExist = check_exisitng_room(findRoom,user["id"],message.receiver_id)
     print(roomExist)
+    # for room in findRoom :
+    #     if len(room.roomUser) == 2 :
+    #         isSameRoom=False
+    #         for roomUser in room.roomUser :
+    #             if roomUser.user_id == user["id"] or roomUser.user_id == message.receiver_id :
+    #                 isSameRoom = True
+    #             else :
+    #                 isSameRoom=False
+    #                 break
+    #         if isSameRoom :
+    #             roomExist = room
+    #             break
     room_id = None
 
     # roomForResponse = {}
     if roomExist is None :
-        roomMapping = {"id" : generate_id(),"created_at" : datetime.utcnow(),"updated_at" : datetime.utcnow()}
-        roomUsersDb = [RoomUsers(**{"id" : generate_id(),"user_id" : user["id"],"room_id" : roomMapping["id"],"deleted" : False}),RoomUsers(**{"id" : generate_id(),"user_id" : message.receiver_id,"room_id" : roomMapping["id"],"deleted" : False})]
+        room_id = await create_room(user["id"],message.receiver_id,session)
+        # roomMapping = {"id" : generate_id(),"created_at" : datetime.utcnow(),"updated_at" : datetime.utcnow()}
+        # roomUsersDb = [RoomUsers(**{"id" : generate_id(),"user_id" : user["id"],"room_id" : roomMapping["id"],"deleted" : False}),RoomUsers(**{"id" : generate_id(),"user_id" : message.receiver_id,"room_id" : roomMapping["id"],"deleted" : False})]
 
-        room_id = roomMapping["id"]
+        # room_id = roomMapping["id"]
 
-        session.add(Room(**roomMapping))
-        session.add_all(roomUsersDb)
+        # session.add(Room(**roomMapping))
+        # session.add_all(roomUsersDb)
 
         # roomForResponse = {**roomMapping}
     else :

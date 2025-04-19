@@ -7,6 +7,9 @@ class AddMessageRequest(BaseModel) :
     package_prices_id : int | None = None
     message : str
 
+class AddAutoReplyChatRequest(BaseModel) :
+    message : str
+
 class UpdateMessageRequest(BaseModel) :
     message : str 
 
