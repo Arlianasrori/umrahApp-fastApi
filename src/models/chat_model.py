@@ -23,7 +23,7 @@ class Room(Base):
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow())
     updated_at = Column(DateTime, default=datetime.datetime.utcnow(), onupdate=datetime.datetime.utcnow())
-    messages = relationship("Message", back_populates="room")
+    messages = relationship("Message", back_populates="room",order_by="asc(Message.created_at)")
     roomUser = relationship("RoomUsers",back_populates="room")
 
     def __repr__(self):

@@ -21,7 +21,7 @@ from ..domain.schemas.notification_schema import NotificationBase,ResponseGetUnr
 # db
 from ..db.sessionDepedency import sessionDepedency
 # schemas
-from ..domain.schemas.response_schema import ApiResponse
+from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
 from ..domain.schemas.user_schema import UserBase
 from ..types.package_types import PackageTypeEnum,RoomTypeEnum
 # depends
@@ -101,6 +101,10 @@ async def getNotificationById(id_notification : int,user : dict = Depends(getUse
 @userRouter.post("/notification/read/{id_notification}",response_model=ApiResponse[NotificationBase],tags=["USER/NOTIFICATION"])
 async def readNotification(id_notification : int,user : dict = Depends(getUserAuth),session : sessionDepedency = None) :
     return await notificationService.readNotification(id_notification,user["id"],session)
+
+@userRouter.post("/notification/all/read",response_model=MessageOnlyResponse,tags=["USER/NOTIFICATION"])
+async def readAllNotification(user : dict = Depends(getUserAuth),session : sessionDepedency = None) :
+    return await notificationService.readAllNotif(user["id"],session)
 
 @userRouter.get("/notification/unread/count",response_model=ApiResponse[ResponseGetUnreadNotification],tags=["USER/NOTIFICATION"])
 async def getUnreadNotification(user : dict = Depends(getUserAuth),session : sessionDepedency = None) :

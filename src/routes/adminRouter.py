@@ -20,7 +20,7 @@ from ..domain.schemas.notification_schema import NotificationBase,ResponseGetUnr
 # db
 from ..db.sessionDepedency import sessionDepedency
 # schemas
-from ..domain.schemas.response_schema import ApiResponse
+from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
 from ..domain.schemas.user_schema import UserBase
 # depends
 from ..auth.auth_depends.admin.depend_auth_admin import adminAuth
@@ -97,17 +97,21 @@ async def get_all_package_contains_booking(id_package : int,admin : dict = Depen
 
 # notification
 @adminRouter.get("/notification",response_model=ApiResponse[dict[date,list[NotificationBase]]],tags=["ADMIN/NOTIFICATION"])
-async def getAllNotification(user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
-    return await notificationService.getAllNotification(user["id"],session)
+async def getAllNotification(admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getAllNotification(admin["id"],session)
 
 @adminRouter.get("/notification/{id_notification}",response_model=ApiResponse[NotificationBase],tags=["ADMIN/NOTIFICATION"])
-async def getNotificationById(id_notification : int,user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
-    return await notificationService.getNotificationById(id_notification,user["id"],session)
+async def getNotificationById(id_notification : int,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getNotificationById(id_notification,admin["id"],session)
 
 @adminRouter.post("/notification/read/{id_notification}",response_model=ApiResponse[NotificationBase],tags=["ADMIN/NOTIFICATION"])
-async def readNotification(id_notification : int,user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
-    return await notificationService.readNotification(id_notification,user["id"],session)
+async def readNotification(id_notification : int,admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.readNotification(id_notification,admin["id"],session)
+
+@adminRouter.post("/notification/all/read",response_model=MessageOnlyResponse,tags=["ADMIN/NOTIFICATION"])
+async def readAllNotification(admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.readAllNotif(admin["id"],session)
 
 @adminRouter.get("/notification/unread/count",response_model=ApiResponse[ResponseGetUnreadNotification],tags=["ADMIN/NOTIFICATION"])
-async def getUnreadNotification(user : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
-    return await notificationService.getCountNotification(user["id"],session)
+async def getUnreadNotification(admin : dict = Depends(getAdminAuth),session : sessionDepedency = None) :
+    return await notificationService.getCountNotification(admin["id"],session)

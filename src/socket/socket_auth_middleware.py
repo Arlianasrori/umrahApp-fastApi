@@ -12,15 +12,16 @@ async def socket_auth_middleware(auth):
             return False
         
         auth_header = auth.get("access_token")
+
         if not auth_header:
             return False
-        
+
+        if type(auth_header) == str :
+            token = auth_header
+        else :
+            scheme, _, token = auth_header.partition(' ')
+    
         print(f"ini auth token {auth_header}")
-        
-        # scheme, _, token = auth_header.partition(' ')
-        
-        # if not token:
-        #     return False
         
         try:
             payload = jwt.decode(auth_header, SECRET_KEY, algorithms=["HS256"])

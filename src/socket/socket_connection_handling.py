@@ -37,6 +37,7 @@ def handle_socket_connection() :
             print("disconnect")
 
 async def getUserSid(user_id : int) -> int | None :
+    print(online_users)
     # Looping untuk setiap pengguna online
     for user in online_users.items():
         sid, user = user

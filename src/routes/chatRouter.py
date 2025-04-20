@@ -5,8 +5,8 @@ from ..domain.chat import chatService
 # db
 from ..db.sessionDepedency import sessionDepedency
 # schemas
-from ..domain.chat.chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse
-from ..domain.schemas.chat_schema import MessageBase,MediaMessageBase,MessageWithSenderReceiver
+from ..domain.chat.chatSchema import AddMessageRequest, UpdateMessageRequest, GetRoomQuery, GetRoomResponse, AddAutoReplyChatRequest
+from ..domain.schemas.chat_schema import MessageBase,MediaMessageBase, MessageWithSenderReceiver
 from ..domain.schemas.response_schema import ApiResponse,MessageOnlyResponse
 # depends
 from ..auth.auth_depends.alluser.depend_auth_alluser import allUserAuth
@@ -17,6 +17,10 @@ chatRouter = APIRouter(prefix="/chat",dependencies=[Depends(allUserAuth)])
 @chatRouter.post("/start_chat",response_model=ApiResponse[MessageBase],description="used to start a chat with other users or create a room.",tags=["CHAT/ROOM"])
 async def start_chat(message : AddMessageRequest,user : dict = Depends(getAllUserAuth),session : sessionDepedency = None) :
     return await chatService.startChat(user,message,session)
+
+@chatRouter.post("/start_auto_reply_chat",response_model=ApiResponse[MessageBase],description="used to start auto reply chat",tags=["CHAT/ROOM"])
+async def start_auto_replychat(message : AddAutoReplyChatRequest,user : dict = Depends(getAllUserAuth)) :
+    return await chatService.start_auto_reply_message(user,message)
 
 @chatRouter.get("/room",response_model=ApiResponse[list[GetRoomResponse]],description="used to start a chat with other users or create a room.",tags=["CHAT/ROOM"])
 async def getAllRoom(query : GetRoomQuery = Depends(),user : dict = Depends(getAllUserAuth),session : sessionDepedency = None) :
